@@ -1,0 +1,78 @@
+-need a socket wrapper 
+
+-create a server class 
+
+-each server will have a password in order to login into 
+
+-channels 
+
+-users 
+
+-hostname
+
+-port
+
+-client sockets 
+
+-probably implement this list of commands :} 
+
+1. **NICK**: Sets the client's nickname.
+2. **USER**: Sets the client's username and other details.
+3. **JOIN**: Joins a channel or multiple channels.
+4. **PART**: Leaves a channel.
+5. **PRIVMSG**: Sends a private message to a user or a channel.
+6. **NOTICE**: Sends a notice message to a user or a channel.
+7. **PING**: Sends a ping request to the server to check if it's still alive.
+8. **PONG**: Responds to a ping request from the server.
+9. **MODE**: Sets the mode of a user or a channel (e.g., +o for operator status).
+10. **TOPIC**: Sets or retrieves the topic of a channel.
+11. **LIST**: Lists all available channels or shows detailed information about a specific channel.
+12. **NAMES**: Lists the users in a channel.
+13. **KICK**: Kicks a user out of a channel.
+14. **WHOIS**: Retrieves information about a user.
+15. **QUIT**: Disconnects from the server.
+
+channel class : 
+
+each channel should have : 
+
+-a name (starting with #)
+
+-users
+
+-operators
+
+-a topic 
+
+-a ban list maybe 
+
+-max number of users 
+
+-a channel mode either one of the four modes am about to list or a custom one , i dunno which one do we need to implement .
+
+- **Private mode**: Only invited or authorized users can join the channel.
+- **Secret mode**: The channel is not visible in channel listings, and users must know the exact channel name to join.
+- **Moderated mode**: Only users with operator privileges can send messages, and others can only listen.
+- **Invite-only mode**: Users need to be invited by an operator to join the channel.
+- **Password mode**: Users need to provide a password to join the channel.
+
+-methods : 
+
+-getters : 
+
+-channel name , topic , mode , list of users , a certain user 
+
+-setters: 
+
+-set channel topic , mode (?)
+
+-add operator , remove 
+
+-add user , remove (either kicking or adding to the ban list)
+
+-sending messages : 
+
+- send a message to the whole channel
+- send a private message
+
+-a join or invite method
