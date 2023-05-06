@@ -4,7 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-const int PORT = 6969;
+const int PORT = 1337;
 
 int main()
 {
