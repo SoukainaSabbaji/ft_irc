@@ -11,12 +11,13 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <map>
+#include "Channel.hpp"
 #define RED    "\033[31m"
 #define GREEN  "\033[32m"
 #define YELLOW "\033[33m"
 #define RESET  "\033[0m"
 
-
+class Client;
 class Server
 {
     private:
@@ -37,6 +38,9 @@ class Server
         std::string getPassword() const;
         bool isRunning() const;
         void    InitSocket();
+        void    readFromClient(int client_fd);
+        void    writeToClient();
+        void    disconnect();
 
         // Exceptions 
         class InvalidSocketFd : public std::exception

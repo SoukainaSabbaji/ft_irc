@@ -1,4 +1,5 @@
-#include "server.hpp"
+#include "Server.hpp"
+#include "Client.hpp"
 
 
 
@@ -31,6 +32,34 @@ const char *Server::ListenError::what() const throw()
 
 //********************** - Private methods - **********************//
 
+void Server::readFromClient(int client_fd)
+{
+    char buffer[1024];
+    std::memset(buffer, 0, sizeof(buffer));
+
+    int len = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+    if (len > 0)
+    {
+        std::string message(buffer, len);
+        std::cout << "Received message from client " << client_fd << ": " << message << std::endl;
+        //further processing of the message me thinks 
+    }
+    else if (len == 0)
+    {
+        std::cout << "Client " << client_fd << " disconnected" << std::endl;
+        close(client_fd);
+        //remove the client 
+    }
+    else
+    {
+        std::cout << "Error reading from client " << client_fd << std::endl;
+        close(client_fd);
+        //remove the client 
+    }
+}
+
+
+
 void    Server::InitSocket()
 {
     struct sockaddr_in server_addr;
@@ -44,15 +73,14 @@ void    Server::InitSocket()
     server_addr.sin_port = htons(_port);
     server_addr.sin_addr.s_addr = INADDR_ANY;
     //set the server to be non-blocking using fcntl
-    int flags = fcntl(_fd, F_GETFL, 0);
-    if (fcntl(_fd, F_SETFL, flags | O_NONBLOCK) < 0)
-    {
+    if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)
+    { 
         throw FcntlError();
         close(_fd);
     }
     //    set the server to be reusuable using setsockopt
     int opt = 1;
-    if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    if (setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR , &opt, sizeof(opt)) < 0)
     {
         throw SetsockoptError();
         close(_fd);
@@ -90,7 +118,7 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
     {
         if (poll(_fdsVector.data(), _fdsVector.size(), -1) < 0)
         {
-            std::cerr << "Error polling" << std::endl;
+            std::cout << RED << "Error polling" << RESET <<  std::endl;
             break;
         }
         if (_fdsVector[0].revents & POLLIN)
@@ -98,34 +126,30 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
             client_fd = accept(_fd, (struct sockaddr *)&client_addr, &client_len);
             if (client_fd < 0)
             {
-                std::cerr << "Error accepting client" << std::endl;
+                std::cout << "Error accepting client" << std::endl;
                 break;
             }
             client_poll_fd.fd = client_fd;
             client_poll_fd.events = POLLIN;
             _fdsVector.push_back(client_poll_fd);
-            _clients[client_fd] = new Client(client_fd, _fdsVector, _clients, _channels, _password);
+            _clients.insert(std::pair<int, Client*>(client_fd, new Client()));
             std::cout << "New client connected" << std::endl;
         }
         for (size_t i = 1; i < _fdsVector.size(); i++)
         {
             if (_fdsVector[i].revents & POLLIN)
             {
-                _clients[_fdsVector[i].fd]->readFromClient();
-            }
-            if (_fdsVector[i].revents & POLLOUT)
-            {
-                _clients[_fdsVector[i].fd]->writeToClient();
-            }
-            if (_fdsVector[i].revents & POLLHUP)
-            {
-                std::cout << "Client disconnected" << std::endl;
-                _clients[_fdsVector[i].fd]->disconnect();
-                _fdsVector.erase(_fdsVector.begin() + i);
-                i--;
+                std::cout << "Client " << _fdsVector[i].fd << " sent a message" << std::endl;
+                readFromClient(client_fd);
             }
         }
     }
+        
+}
+
+Server::~Server()
+{
+    close(_fd);
 }
 
 int Server::getFd() const

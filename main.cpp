@@ -1,6 +1,7 @@
-#include "server.hpp"
+#include "Server.hpp"
+#include "Client.hpp"
 
-bool validatePort(const std::string &port, const std::string &pass)
+bool validatePort(const std::string &port)
 {
     for (std::string::const_iterator it = port.begin(); it != port.end(); ++it)
     {
@@ -25,7 +26,7 @@ int main(int argc , char **argv)
     }
     std::string port = argv[1];
     std::string pass = argv[2];
-    if (!validatePort(port, pass))
+    if (!validatePort(port))
     {
         std::cout << RED << "Invalid port" << RESET << std::endl;
         return 1;
@@ -38,6 +39,6 @@ int main(int argc , char **argv)
     else 
     {
         Server server(atoi(port.c_str()), pass);
-        server.run();
+        // server.run();
     }
 }
