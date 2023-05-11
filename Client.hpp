@@ -1,3 +1,5 @@
+#ifndef CLIENT_HPP
+#define CLIENT_HPP
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
@@ -22,7 +24,10 @@ class Client
     private:
         std::string     _nickname;
         std::string     _username;
+		std::string		_claimedPswd;
         bool            _isOperator;
+		bool			_isConnected;
+		bool			_isAuthenticated;
         friend class Server;
     public:
         Client();
@@ -30,6 +35,16 @@ class Client
         ~Client();
         std::string getNickname() const;
         std::string getUsername() const;
-        bool isOperator() const;
+		std::string	getClaimedPsswd(void) const;
+		void		setNickname(std::string nickname);
+		void		setUsername(std::string username);
+		void	setConnection(bool connection);
+		void	setClaimedPsswd(std::string passwd);
+		void	setAuthentication(bool authentication);
+		bool	isAuthenticated(void) const;
+		bool	isConnected(void) const;
+        bool 	isOperator() const;
 
 };
+
+#endif

@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "server.hpp"
 #include "Client.hpp"
 
 //********************** - Exceptions - **********************//
@@ -33,6 +33,8 @@ const char *Server::ListenError::what() const throw()
 void Server::removeClient(int client_fd)
 {
     std::map<int, Client *>::iterator it = _clients.find(client_fd);
+	_clients[client_fd]->setAuthentication(false);
+	_clients[client_fd]->setConnection(false);
     if (it != _clients.end())
     {
         delete it->second;
@@ -40,33 +42,34 @@ void Server::removeClient(int client_fd)
     }
 }
 
-bool Server::readFromClient(int client_fd)
+std::string Server::readFromClient(int client_fd)
 {
     char buffer[1024];
     std::memset(buffer, 0, sizeof(buffer));
 
     int len = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+	std::string message(buffer, len);
     if (len > 0)
     {
-        std::string message(buffer, len);
         std::cout << "Received message from client : " << client_fd << ": " << message << std::endl;
         // further processing of the message me thinks
+		// me disagrees processing will be outside this only reads
     }
     else if (len == 0)
     {
         std::cout << "Client :" << client_fd << " disconnected" << std::endl;
         close(client_fd);
         removeClient(client_fd);
-        return false;
+        return "";
     }
     else
     {
         std::cout << "Error reading from client " << client_fd << std::endl;
         close(client_fd);
         removeClient(client_fd);
-        return false;
+        return "";
     }
-    return true;
+    return message;
 }
 
 void Server::InitSocket()
@@ -142,18 +145,64 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
             client_poll_fd.events = POLLIN;
             _fdsVector.push_back(client_poll_fd);
             _clients.insert(std::pair<int, Client *>(client_fd, new Client()));
+			_clients[client_fd]->setConnection(true);
             std::cout << GREEN << "New client connected" << RESET << std::endl;
         }
         for (size_t i = 1; i < _fdsVector.size(); i++)
         {
             client_fd = _fdsVector[i].fd; 
-            if (_fdsVector[i].revents & POLLIN)
-            {
-                if (!readFromClient(client_fd))
-                    break;
-            }
+			if (!_clients[client_fd]->isAuthenticated())
+			{
+				authenticateUser(client_fd);
+			}
+            // else if (_fdsVector[i].revents & POLLIN)
+            // {
+            //     if (!readFromClient(client_fd))
+            //         break;
+            // }
         }
     }
+}
+
+
+// remind me to add the search for nicknames already in use.
+bool Server::authenticateUser(int client_fd)
+{
+	std::string					message;
+	std::vector<std::string>	args;
+	std::string					holder;
+
+	message = readFromClient(client_fd);
+	std::stringstream	tmp(message);
+	while (std::getline(tmp, holder, ' '))
+		args.push_back(holder);
+	if (args.size() < 2)
+	{
+		send(client_fd, "ERR_NEEDMOREPARAMS\n\r", 21, -1);
+		return (false);
+	}
+	if (message.find("PASS ") == 0)
+	{
+		_clients[client_fd]->setClaimedPsswd(message.substr(5, message.length() - 1));
+		if (this->_password != _clients[client_fd]->getClaimedPsswd())
+			send(client_fd, "ERR_PASSWDMISMATCH\n\r", 21, -1);
+		return (false);
+	}
+	else if (message.find("USER ") == 0 || message.find("NICK ") == 0)
+	{
+		if (message.find("USER ") == 0)
+			_clients[client_fd]->setUsername(args[1]);
+		else
+			_clients[client_fd]->setNickname(args[1]);
+	}
+	if (!_clients[client_fd]->getNickname().empty() && !_clients[client_fd]->getUsername().empty())
+	{
+		if (_clients[client_fd]->getClaimedPsswd() == this->_password)
+		{
+			return (_clients[client_fd]->setAuthentication(true), true);
+		}
+	}
+	return (false);
 }
 
 Server::~Server()

@@ -5,6 +5,8 @@ Client::Client()
     _nickname = "";
     _username = "";
     _isOperator = false;
+	_isConnected = false;
+	_isAuthenticated = false;
 }
 
 Client::Client(const std::string &nickname, const std::string &username, bool isOperator)
@@ -28,9 +30,48 @@ std::string Client::getUsername() const
     return _username;
 }
 
+void	Client::setNickname(std::string nickname)
+{
+	this->_nickname = nickname;
+}
+
+void	Client::setUsername(std::string username)
+{
+	this->_username = username;
+}
+
 bool Client::isOperator() const
 {
     return _isOperator;
 }
 
+void	Client::setClaimedPsswd(std::string passwd)
+{
+	this->_claimedPswd = passwd;
+}
+
+void	Client::setConnection(bool connection)
+{
+	this->_isConnected = connection;
+}
+
+void	Client::setAuthentication(bool authentication)
+{
+	this->_isAuthenticated = authentication;
+}
+
+bool	Client::isAuthenticated(void) const
+{
+	return (this->_isAuthenticated);
+}
+
+bool	Client::isConnected(void) const
+{
+	return (this->_isConnected);
+}
+
+std::string	Client::getClaimedPsswd(void) const
+{
+	return (this->_claimedPswd);
+}
 //

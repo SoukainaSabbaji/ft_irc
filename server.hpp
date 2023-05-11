@@ -1,3 +1,5 @@
+#ifndef SERVER_HPP
+#define SERVER_HPP
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
@@ -10,8 +12,9 @@
 #include <ctime>
 #include <poll.h>
 #include <fcntl.h>
+#include <bits/stdc++.h>
 #include <map>
-#include "Channel.hpp"
+// #include "Channel.hpp"
 #define RED    "\033[31m"
 #define GREEN  "\033[32m"
 #define YELLOW "\033[33m"
@@ -26,7 +29,7 @@ class Server
         bool                    _running;
         std::string             _password;
         std::vector<pollfd>     _fdsVector;
-        std::vector<Channel>    _channels;
+        // std::vector<Channel>    _channels;
         std::map<int, Client*>  _clients;
     
     public:
@@ -38,9 +41,10 @@ class Server
         std::string getPassword() const;
         bool isRunning() const;
         void    InitSocket();
-        bool    readFromClient(int client_fd);
+        std::string    readFromClient(int client_fd);
         void    writeToClient();
         void    removeClient(int client_fd);
+		bool	authenticateUser(int client_fd);
 
         // Exceptions 
         class InvalidSocketFd : public std::exception
@@ -69,3 +73,5 @@ class Server
                 virtual const char *what() const throw();
         };
 };
+
+#endif
