@@ -38,9 +38,9 @@ class Server
         std::string getPassword() const;
         bool isRunning() const;
         void    InitSocket();
-        void    readFromClient(int client_fd);
+        bool    readFromClient(int client_fd);
         void    writeToClient();
-        void    disconnect();
+        void    removeClient(int client_fd);
 
         // Exceptions 
         class InvalidSocketFd : public std::exception

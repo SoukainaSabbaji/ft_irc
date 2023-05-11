@@ -1,8 +1,6 @@
 #include "Server.hpp"
 #include "Client.hpp"
 
-
-
 //********************** - Exceptions - **********************//
 
 const char *Server::InvalidSocketFd::what() const throw()
@@ -32,7 +30,17 @@ const char *Server::ListenError::what() const throw()
 
 //********************** - Private methods - **********************//
 
-void Server::readFromClient(int client_fd)
+void Server::removeClient(int client_fd)
+{
+    std::map<int, Client *>::iterator it = _clients.find(client_fd);
+    if (it != _clients.end())
+    {
+        delete it->second;
+        _clients.erase(it);
+    }
+}
+
+bool Server::readFromClient(int client_fd)
 {
     char buffer[1024];
     std::memset(buffer, 0, sizeof(buffer));
@@ -41,26 +49,27 @@ void Server::readFromClient(int client_fd)
     if (len > 0)
     {
         std::string message(buffer, len);
-        std::cout << "Received message from client " << client_fd << ": " << message << std::endl;
-        //further processing of the message me thinks 
+        std::cout << "Received message from client : " << client_fd << ": " << message << std::endl;
+        // further processing of the message me thinks
     }
     else if (len == 0)
     {
-        std::cout << "Client " << client_fd << " disconnected" << std::endl;
+        std::cout << "Client :" << client_fd << " disconnected" << std::endl;
         close(client_fd);
-        //remove the client 
+        removeClient(client_fd);
+        return false;
     }
     else
     {
         std::cout << "Error reading from client " << client_fd << std::endl;
         close(client_fd);
-        //remove the client 
+        removeClient(client_fd);
+        return false;
     }
+    return true;
 }
 
-
-
-void    Server::InitSocket()
+void Server::InitSocket()
 {
     struct sockaddr_in server_addr;
 
@@ -72,15 +81,15 @@ void    Server::InitSocket()
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(_port);
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    //set the server to be non-blocking using fcntl
+    // set the server to be non-blocking using fcntl
     if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)
-    { 
+    {
         throw FcntlError();
         close(_fd);
     }
     //    set the server to be reusuable using setsockopt
     int opt = 1;
-    if (setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR , &opt, sizeof(opt)) < 0)
+    if (setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
     {
         throw SetsockoptError();
         close(_fd);
@@ -118,7 +127,7 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
     {
         if (poll(_fdsVector.data(), _fdsVector.size(), -1) < 0)
         {
-            std::cout << RED << "Error polling" << RESET <<  std::endl;
+            std::cout << RED << "Error polling" << RESET << std::endl;
             break;
         }
         if (_fdsVector[0].revents & POLLIN)
@@ -126,25 +135,25 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
             client_fd = accept(_fd, (struct sockaddr *)&client_addr, &client_len);
             if (client_fd < 0)
             {
-                std::cout << "Error accepting client" << std::endl;
+                std::cout << RED << "Error accepting client" << RESET << std::endl;
                 break;
             }
             client_poll_fd.fd = client_fd;
             client_poll_fd.events = POLLIN;
             _fdsVector.push_back(client_poll_fd);
-            _clients.insert(std::pair<int, Client*>(client_fd, new Client()));
-            std::cout << "New client connected" << std::endl;
+            _clients.insert(std::pair<int, Client *>(client_fd, new Client()));
+            std::cout << GREEN << "New client connected" << RESET << std::endl;
         }
         for (size_t i = 1; i < _fdsVector.size(); i++)
         {
+            client_fd = _fdsVector[i].fd; 
             if (_fdsVector[i].revents & POLLIN)
             {
-                std::cout << "Client " << _fdsVector[i].fd << " sent a message" << std::endl;
-                readFromClient(client_fd);
+                if (!readFromClient(client_fd))
+                    break;
             }
         }
     }
-        
 }
 
 Server::~Server()
