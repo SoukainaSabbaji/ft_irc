@@ -206,11 +206,10 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
 				if (!authenticateUser(client_fd))
 					break ;
 			}
-            // else if (_fdsVector[i].revents & POLLIN)
-            // {
-            //     if (!readFromClient(client_fd))
-            //         break;
-            // }
+            else if (_fdsVector[i].revents & POLLIN)
+            {
+               readFromClient(client_fd);
+            }
         }
     }
 }
