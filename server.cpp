@@ -201,14 +201,12 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
         for (size_t i = 1; i < _fdsVector.size(); i++)
         {
             client_fd = _fdsVector[i].fd; 
-			if (_clients[client_fd] && !_clients[client_fd]->isAuthenticated())
-			{
-				if (!authenticateUser(client_fd))
-					break ;
-			}
-            else if (_fdsVector[i].revents & POLLIN)
+            if (_fdsVector[i].revents & POLLIN)
             {
-               readFromClient(client_fd);
+                std::cout<<"waa dkhlt"<<std::endl;
+			    if (_clients[client_fd] && _clients[client_fd]->isConnected() && !_clients[client_fd]->isAuthenticated())
+			    	authenticateUser(client_fd);
+            //    readFromClient(client_fd);
             }
         }
     }
