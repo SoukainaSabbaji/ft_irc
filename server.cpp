@@ -48,7 +48,8 @@ std::string Server::readFromClient(int client_fd)
     std::memset(buffer, 0, sizeof(buffer));
 
     int len = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-	std::string message(buffer, len);
+	std::string message(buffer, len); // this line causes the abort 
+	// wtf it's your line
     if (len > 0)
     {
         std::cout << "Received message from client : " << client_fd << ": " << message << std::endl;
@@ -178,14 +179,14 @@ bool Server::authenticateUser(int client_fd)
 		args.push_back(holder);
 	if (args.size() < 2)
 	{
-		send(client_fd, "ERR_NEEDMOREPARAMS\n\r", 21, -1);
+		// send(client_fd, "ERR_NEEDMOREPARAMS\n\r", 21, MSG_EOF);
 		return (false);
 	}
 	if (message.find("PASS ") == 0)
 	{
 		_clients[client_fd]->setClaimedPsswd(message.substr(5, message.length() - 1));
 		if (this->_password != _clients[client_fd]->getClaimedPsswd())
-			send(client_fd, "ERR_PASSWDMISMATCH\n\r", 21, -1);
+			// send(client_fd, "ERR_PASSWDMISMATCH\n\r", 21, -1);
 		return (false);
 	}
 	else if (message.find("USER ") == 0 || message.find("NICK ") == 0)
