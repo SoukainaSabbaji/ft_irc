@@ -1,3 +1,5 @@
+#ifndef CHANNEL_HPP
+#define	CHANNEL_HPP
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
@@ -44,3 +46,5 @@ class Channel
         std::vector<std::string> getOperators() const;
 
 };
+
+#endif

@@ -12,9 +12,12 @@ bool validatePort(const std::string &port)
     return (portValue >= 1 && portValue <= 65535);
 }
 
-bool validatePassword(const std::string &password, const std::string &pass)
+bool validatePassword(const std::string &password)
 {
-    return (password == pass);
+	size_t	passLen;
+
+	passLen = password.length();
+    return (passLen >= 8 && passLen <= 16);
 }
 
 int main(int argc , char **argv)
@@ -31,7 +34,7 @@ int main(int argc , char **argv)
         std::cout << RED << "Invalid port" << RESET << std::endl;
         return 1;
     }
-    else if (!validatePassword(pass, pass))
+    else if (!validatePassword(pass))
     {
         std::cout << RED << "Invalid password" << RESET << std::endl;
         return 1;

@@ -1,3 +1,5 @@
+#ifndef SERVER_HPP
+#define SERVER_HPP
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
@@ -10,8 +12,8 @@
 #include <ctime>
 #include <poll.h>
 #include <fcntl.h>
+#include <bits/stdc++.h>
 #include <map>
-#include "Channel.hpp"
 #define RED    "\033[31m"
 #define GREEN  "\033[32m"
 #define YELLOW "\033[33m"
@@ -28,7 +30,7 @@ class Server
         bool                    _running;
         std::string             _password;
         std::vector<pollfd>     _fdsVector;
-        std::vector<Channel>    _channels;
+        // std::vector<Channel>    _channels;
         std::map<int, Client*>  _clients;
         void  parseCommand(Client *client, std::string &command);
         void  processCommand(Client *client, std::vector<std::string> tokens);
@@ -48,6 +50,8 @@ class Server
         std::string normalizeLineEnding(std::string &str);
         void sendMessage(int fd, std::string message);
         void _nickCommand(Client *client, std::vector<std::string> tokens);
+        std::string    readFromClient(int client_fd);
+		bool	authenticateUser(int client_fd);
 
         // Exceptions 
         class InvalidSocketFd : public std::exception
@@ -76,3 +80,5 @@ class Server
                 virtual const char *what() const throw();
         };
 };
+
+#endif
