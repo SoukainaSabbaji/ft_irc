@@ -28,6 +28,15 @@ std::string Client::getUsername() const
     return _username;
 }
 
+int Client::getFd() const
+{
+    return _fd;
+}
+
+void Client::setFd(int fd)
+{
+    _fd = fd;
+}
 bool Client::isOperator() const
 {
     return _isOperator;

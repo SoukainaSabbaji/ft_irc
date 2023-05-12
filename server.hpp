@@ -17,6 +17,8 @@
 #define YELLOW "\033[33m"
 #define RESET  "\033[0m"
 
+#define BUFFER_SIZE 1024
+
 class Client;
 class Server
 {
@@ -28,6 +30,8 @@ class Server
         std::vector<pollfd>     _fdsVector;
         std::vector<Channel>    _channels;
         std::map<int, Client*>  _clients;
+        void  parseCommand(Client *client, std::string &command);
+        void  processCommand(Client *client, std::vector<std::string> tokens);
     
     public:
         Server();
@@ -38,9 +42,12 @@ class Server
         std::string getPassword() const;
         bool isRunning() const;
         void    InitSocket();
-        bool    readFromClient(int client_fd);
+        bool    readFromClient(Client *client);
         void    writeToClient();
         void    removeClient(int client_fd);
+        std::string normalizeLineEnding(std::string &str);
+        void sendMessage(int fd, std::string message);
+        void _nickCommand(Client *client, std::vector<std::string> tokens);
 
         // Exceptions 
         class InvalidSocketFd : public std::exception

@@ -32,7 +32,7 @@ const char *Server::ListenError::what() const throw()
 
 void Server::removeClient(int client_fd)
 {
-    std::map<int, Client *>::iterator it = _clients.find(client_fd);
+    std::map<int, Client*>::iterator it = _clients.find(client_fd);
     if (it != _clients.end())
     {
         delete it->second;
@@ -40,31 +40,99 @@ void Server::removeClient(int client_fd)
     }
 }
 
-bool Server::readFromClient(int client_fd)
+
+void Server::sendMessage(int fd, std::string message)
 {
-    char buffer[1024];
+    if (fd < 0)
+        return;
+    if (send(fd, message.c_str(), message.size(), 0) < 0)
+        std::cerr << "Error sending message to client" << std::endl;
+}
+
+void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
+{
+    if (tokens.size() < 2)
+    {
+        // send error message to client
+        sendMessage(client->getFd(), "ERR_NICKNAME_MISSING");
+        return;
+    }
+}
+void Server::processCommand(Client *client, std::vector<std::string> tokens)
+{
+    // compare tokens[0] to all commands
+    if (tokens.empty())
+        return;
+    const std::string &command = tokens[0];
+    if (command == "NICK" || command == "nick")
+        _nickCommand(client, tokens);
+}
+
+std::string Server::normalizeLineEnding(std::string &str)
+{
+    std::string nstring = str;
+    nstring.erase(std::remove(nstring.begin(), nstring.end(), '\r'), nstring.end());
+    return nstring;
+}
+
+void Server::parseCommand(Client *client, std::string &command)
+{
+    std::vector<std::string> tokens;
+    std::string token;
+    std::string nstring = normalizeLineEnding(command);
+    std::istringstream tokenStream(nstring);
+    if (nstring.find('\n') != std::string::npos && nstring.size() > 1)
+    {
+        while (std::getline(tokenStream, token, ' '))
+        {
+            tokens.push_back(token);
+        }
+    }
+    std::cout << tokens[0] << std::endl;
+    processCommand(client, tokens);
+}
+
+bool Server::readFromClient(Client *client)
+{
+    char buffer[BUFFER_SIZE];
     std::memset(buffer, 0, sizeof(buffer));
 
-    int len = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-    if (len > 0)
+    std::string message; // Accumulate the complete message from multiple buffer reads
+
+    while (true)
     {
-        std::string message(buffer, len);
-        std::cout << "Received message from client : " << client_fd << ": " << message << std::endl;
-        // further processing of the message me thinks
-    }
-    else if (len == 0)
-    {
-        std::cout << "Client :" << client_fd << " disconnected" << std::endl;
-        close(client_fd);
-        removeClient(client_fd);
-        return false;
-    }
-    else
-    {
-        std::cout << "Error reading from client " << client_fd << std::endl;
-        close(client_fd);
-        removeClient(client_fd);
-        return false;
+        int len = recv(client->getFd(), buffer, sizeof(buffer) - 1, 0);
+        if (len > 0)
+        {
+            std::string partialMessage(buffer, len);
+            message += partialMessage;
+            if (partialMessage.find('\n') != std::string::npos)
+            {
+                // Complete message received
+                std::cout << "Received message from client " << client->getFd() << ": " << message << std::endl;
+                parseCommand(client, message);
+                break;
+            }
+            else
+            {
+                // Partial message received, request more data
+                send(client->getFd(), "Continue by pressing \\n\n", 24, 0);
+            }
+        }
+        else if (len == 0)
+        {
+            std::cout << "Client: " << client->getFd() << " disconnected" << std::endl;
+            close(client->getFd());
+            removeClient(client->getFd());
+            return false;
+        }
+        else
+        {
+            std::cout << "Error reading from client " << client->getFd() << std::endl;
+            close(client->getFd());
+            removeClient(client->getFd());
+            return false;
+        }
     }
     return true;
 }
@@ -81,13 +149,11 @@ void Server::InitSocket()
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(_port);
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    // set the server to be non-blocking using fcntl
     if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)
     {
         throw FcntlError();
         close(_fd);
     }
-    //    set the server to be reusuable using setsockopt
     int opt = 1;
     if (setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
     {
@@ -146,10 +212,11 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
         }
         for (size_t i = 1; i < _fdsVector.size(); i++)
         {
-            client_fd = _fdsVector[i].fd; 
+            Client *client = _clients[_fdsVector[i].fd];
+            client->setFd(_fdsVector[i].fd);
             if (_fdsVector[i].revents & POLLIN)
             {
-                if (!readFromClient(client_fd))
+                if (!readFromClient(client))
                     break;
             }
         }

@@ -11,6 +11,7 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <map>
+#include <sstream>
 #define RED    "\033[31m"
 #define GREEN  "\033[32m"
 #define YELLOW "\033[33m"
@@ -23,6 +24,7 @@ class Client
         std::string     _nickname;
         std::string     _username;
         bool            _isOperator;
+        int             _fd;  // client socket fd
         friend class Server;
     public:
         Client();
@@ -30,6 +32,8 @@ class Client
         ~Client();
         std::string getNickname() const;
         std::string getUsername() const;
+        int getFd() const;
+        void setFd(int fd);
         bool isOperator() const;
 
 };
