@@ -1,6 +1,5 @@
 #include "Server.hpp"
 #include "Client.hpp"
-//test
 //********************** - Exceptions - **********************//
 
 const char *Server::InvalidSocketFd::what() const throw()
@@ -72,6 +71,8 @@ Channel *Server::_findChannel(std::string channelName) const
 
 void    Server::findChannelAndSendMessage(Client *client, std::string channelName, std::string message)
 {
+    //gotta add a authorization check here
+    // if the user is not in the channel he cannot send a message to it
     Channel *target = _findChannel(channelName); 
     if (target)
     {
@@ -86,6 +87,7 @@ void    Server::findChannelAndSendMessage(Client *client, std::string channelNam
 
 void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message)
 {
+    //this function checks if the recipient is a channel of a user and sends the message to the appropriate function
     while (!recipients.empty())
     {
         std::string recipient = recipients.back();
