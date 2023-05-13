@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <bits/stdc++.h>
 #include <map>
+#include "Channel.hpp"
 #define RED    "\033[31m"
 #define GREEN  "\033[32m"
 #define YELLOW "\033[33m"
@@ -30,11 +31,11 @@ class Server
         bool                    _running;
         std::string             _password;
         std::vector<pollfd>     _fdsVector;
-        // std::vector<Channel>    _channels;
+        std::vector<Channel*>    _channels;
         std::map<int, Client*>  _clients;
         void  parseCommand(Client *client, std::string &command);
         void  processCommand(Client *client, std::vector<std::string> tokens);
-    
+        void handleClient(Client *client);
     public:
         Server();
         Server(int port, const std::string &password);
@@ -52,7 +53,10 @@ class Server
         void _nickCommand(Client *client, std::vector<std::string> tokens);
         std::string    readFromClient(int client_fd);
 		bool	authenticateUser(int client_fd);
-
+        void _privmsgCommand(Client *client, std::vector<std::string> tokens);
+        Channel *_findChannel(std::string channelName) const;
+        void    findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message);
+        void    findChannelAndSendMessage(Client *client, std::string channelName, std::string message);
         // Exceptions 
         class InvalidSocketFd : public std::exception
         {

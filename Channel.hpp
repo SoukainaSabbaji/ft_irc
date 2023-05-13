@@ -44,6 +44,7 @@ class Channel
         std::vector<Client*> getClients() const;
         std::vector<std::string> getBannedUsers() const;
         std::vector<std::string> getOperators() const;
+        std::string getChannelName() const;
 
 };
 

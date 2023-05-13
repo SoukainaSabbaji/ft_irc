@@ -58,14 +58,95 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
         return;
     }
 }
+
+Channel *Server::_findChannel(std::string channelName) const
+{
+    std::vector<Channel*>::const_iterator i;
+    for(i = _channels.cbegin(); i != _channels.cend(); i++)
+    {
+        if ((*i)->getChannelName() == channelName)
+                return (*i);
+    }
+    return (NULL);
+}
+
+void    Server::findChannelAndSendMessage(Client *client, std::string channelName, std::string message)
+{
+    Channel *target = _findChannel(channelName); 
+    if (target)
+    {
+        std::vector<Client*> clients = target->getClients();
+        while (!clients.empty())
+        {
+            sendMessage(clients.back()->getFd(), ":" + client->getNickname() + " PRIVMSG " + channelName + " :" + message + "\r\n");
+            clients.pop_back();
+        }
+    }
+}
+
+void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message)
+{
+    while (!recipients.empty())
+    {
+        std::string recipient = recipients.back();
+        //find if recipient is a channel
+        if (recipient[0] == '#')
+            findChannelAndSendMessage(client, recipient, message);
+    }
+
+}
+
+//PRIVMSG command 
+void Server::_privmsgCommand(Client *client, std::vector<std::string> tokens)
+{
+    //check number of parameters
+    if (tokens.size() < 3)
+    {
+        sendMessage(client->getFd(), ":localhost 461 " + (client->getNickname().empty() ? "*" : client->getNickname()) + " " + tokens[1] +  " :Not enough parameters\r\n");
+        return;
+    }
+    //fetch target and message
+    std::string target = tokens[1];
+    std::string message = tokens[2];
+    std::vector<std::string> recipients;
+    //separate recoipients
+    if (target.find(',') != std::string::npos)
+    {
+        std::istringstream tokenStream(target);
+        std::string token;
+        while (std::getline(tokenStream, token, ','))
+        {
+            recipients.push_back(token);
+        }
+    }
+    else
+    {
+        recipients.push_back(target);
+    }
+    //send message to all recipients
+    //find targets and send message
+    findTargetsAndSendMessage(client, recipients, message);
+}
+
 void Server::processCommand(Client *client, std::vector<std::string> tokens)
 {
-    // compare tokens[0] to all commands
+    //remove \n from last token if it exists
+    if (!tokens.empty())
+    {
+        std::string& lastMessage = tokens.back();
+        if (!lastMessage.empty() && lastMessage.back() == '\n')
+        {
+            lastMessage.pop_back();
+        }
+    }
+    // std::cout << "--" << tokens[0] << "--" << std::endl;
     if (tokens.empty())
         return;
     const std::string &command = tokens[0];
     if (command == "NICK" || command == "nick")
         _nickCommand(client, tokens);
+    else if (command == "PRIVMSG" || command == "privmsg")
+        _privmsgCommand(client, tokens);
 }
 
 std::string Server::normalizeLineEnding(std::string &str)
@@ -75,22 +156,34 @@ std::string Server::normalizeLineEnding(std::string &str)
     return nstring;
 }
 
+//parsing a single command from a client
 void Server::parseCommand(Client *client, std::string &command)
 {
     std::vector<std::string> tokens;
     std::string token;
     std::string nstring = normalizeLineEnding(command);
     std::istringstream tokenStream(nstring);
+    //line ending is normalized  from windows style to unix style
+    // and i then look for \n meaning that i have a full command
     if (nstring.find('\n') != std::string::npos && nstring.size() > 1)
     {
+        // i split the command into tokens
         while (std::getline(tokenStream, token, ' '))
         {
             tokens.push_back(token);
         }
     }
-    (void)client;
-    std::cout << tokens[0] << std::endl;
-    // processCommand(client, tokens);
+    //process the command
+    processCommand(client, tokens);
+}
+
+void Server::handleClient(Client *client)
+{
+    std::cout << "Handling client " << client->getFd() << std::endl;
+    std::string message = readFromClient(client->getFd());
+    if (message.empty())
+        return;
+    parseCommand(client, message);
 }
 
 std::string Server::readFromClient(int client_fd)
@@ -98,14 +191,13 @@ std::string Server::readFromClient(int client_fd)
     char buffer[1024];
     std::memset(buffer, 0, sizeof(buffer));
 
+    std::cout << "Reading from client " << client_fd << std::endl;
     int len = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-	std::string message = buffer; // this line causes the abort 
-	// wtf it's your line
+	std::string message = buffer;
     if (len > 0)
     {
         std::cout << "Received message from client : " << client_fd << ": " << message << std::endl;
-        // further processing of the message me thinks
-		// me disagrees processing will be outside this only reads
+        
     }
     else if (len == 0)
     {
@@ -203,10 +295,12 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
             client_fd = _fdsVector[i].fd; 
             if (_fdsVector[i].revents & POLLIN)
             {
-                std::cout<<"waa dkhlt"<<std::endl;
-			    if (_clients[client_fd] && _clients[client_fd]->isConnected() && !_clients[client_fd]->isAuthenticated())
-			    	authenticateUser(client_fd);
-            //    readFromClient(client_fd);
+			    // if (_clients[client_fd] && _clients[client_fd]->isConnected() && !_clients[client_fd]->isAuthenticated())
+			    	// authenticateUser(client_fd);
+                std::cout << "Client " << client_fd << " is ready to read" << std::endl;
+                Client *client = _clients[_fdsVector[i].fd];
+                client->setFd(_fdsVector[i].fd);
+                handleClient(client);
             }
         }
     }
@@ -276,3 +370,6 @@ bool Server::isRunning() const
 {
     return _running;
 }
+
+//example of the error handling
+// :localhost 434 ssabbaji :Pass is not set

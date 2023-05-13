@@ -37,6 +37,10 @@ int Channel::getMaxUsers() const
     return _maxUsers;
 }
 
+std::string Channel::getChannelName() const
+{
+    return _name;
+}
 std::vector<Client*> Channel::getClients() const
 {
     return _clients;
