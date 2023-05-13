@@ -39,12 +39,23 @@ void Server::removeClient(int client_fd)
     }
 }
 
-
-void Server::sendMessage(int fd, std::string message)
+/// @brief this function sends a message from a source to a destination
+/// it automatically adds the message prefixes to the message depending
+/// on the source and destination, refer to rfc1459 section 2.3.1
+/// @param src the source of the message client fd if it's from the client
+/// 0 if it's the server
+/// @param dst the destination of the message it is the client fd 
+/// @param ERRCODE the ERRCODE corespondig to the error faced
+/// @param message the pure message that wants to be sent from 
+/// src to dst the prefixes will be added in the function.
+void Server::sendMessage(int src, int dst, int ERRCODE, std::string message)
 {
-    if (fd < 0)
-        return;
-    if (send(fd, message.c_str(), message.size(), 0) < 0)
+    if (dst == 0)
+        return; //we should check if the nickname exists before calling this function and return an error message to the sender using this function
+	if (src == 0)
+		message = ":" + ;
+	message += "\r\n";
+    if (send(dst, message.c_str(), message.size(), 0) < 0)
         std::cerr << "Error sending message to client" << std::endl;
 }
 
@@ -56,6 +67,13 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
         sendMessage(client->getFd(), "ERR_NICKNAME_MISSING");
         return;
     }
+	if (!nickAvailable(tokens[1]))
+	{
+		sendMessage(client->getFd(), "ERR_NICKNAMEINUSE");
+		return ;
+	}
+	client->setNickname(tokens[1]);
+	sendMessage(client->getFd(), "Userame Set to " + tokens[1]);
 }
 
 Channel *Server::_findChannel(std::string channelName) const
@@ -253,6 +271,11 @@ void Server::InitSocket()
     }
 }
 
+bool	Server::nickAvailable(std::string nick)
+{
+	return (!this->_nicknames[nick]);
+}
+
 //********************** - Constr destr and getters - **********************//
 Server::Server() : _fd(-1), _port(-1), _running(false), _password("")
 {
@@ -308,45 +331,7 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
     }
 }
 
-// remind me to add the search for nicknames already in use.
-bool Server::authenticateUser(int client_fd)
-{
-	std::string					message;
-	std::vector<std::string>	args;
-	std::string					holder;
 
-	message = readFromClient(client_fd);
-	std::stringstream	tmp(message);
-	while (std::getline(tmp, holder, ' '))
-		args.push_back(holder);
-	if (args.size() < 2)
-	{
-		send(client_fd, "ERR_NEEDMOREPARAMS\n\r", 21, MSG_EOF);
-		return (false);
-	}
-	if (message.find("PASS ") == 0)
-	{
-		_clients[client_fd]->setClaimedPsswd(message.substr(5, message.length() - 1));
-		if (this->_password != _clients[client_fd]->getClaimedPsswd())
-			send(client_fd, "ERR_PASSWDMISMATCH\n\r", 21, -1);
-		return (false);
-	}
-	else if (message.find("USER ") == 0 || message.find("NICK ") == 0)
-	{
-		if (message.find("USER ") == 0)
-			_clients[client_fd]->setUsername(args[1]);
-		else
-			_clients[client_fd]->setNickname(args[1]);
-	}
-	if (!_clients[client_fd]->getNickname().empty() && !_clients[client_fd]->getUsername().empty())
-	{
-		if (_clients[client_fd]->getClaimedPsswd() == this->_password)
-		{
-			return (_clients[client_fd]->setAuthentication(true), true);
-		}
-	}
-	return (false);
-}
 
 Server::~Server()
 {
