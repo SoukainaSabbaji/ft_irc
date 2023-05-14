@@ -65,6 +65,7 @@ class Server
 		void _passCommand(Client *client, std::vector<std::string> tokens);
         std::string    readFromClient(int client_fd);
         void _privmsgCommand(Client *client, std::vector<std::string> tokens);
+		void	privMsg(Client *client, std::vector<std::string> tokens);
         Channel *_findChannel(std::string channelName) const;
         void    findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message);
         void    findChannelAndSendMessage(Client *client, std::string channelName, std::string message);

@@ -14,6 +14,8 @@ Client::Client(const std::string &nickname, const std::string &username, bool is
     _nickname = nickname;
     _username = username;
     _isOperator = isOperator;
+	_isConnected = false;
+	_isAuthenticated = false;
 }
 
 Client::~Client()

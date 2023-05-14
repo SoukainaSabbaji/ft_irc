@@ -78,16 +78,12 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
 {
 	//we need to find a way for RPL
 	std::string _host;
-	char		*tmphost;
 
 	if (!src)
 		_host = "irc.soukixie.local";
 	else
-	{
-		tmphost = getAddr(src);
-		_host = tmphost;
-		free(tmphost); //check if we are allowed to use it
-	}
+		_host = getAddr(src);
+		// free(tmphost); //check if we are allowed to use it
 	// std::cout<<this->rplCodeToStr[RPLCODE]<<std::endl;
 	if (!src && RPLCODE)
 		message = ":" + _host + " " + this->rplCodeToStr[RPLCODE] + " " + dst->getNickname() + " :" + message + "\n\r";
@@ -130,6 +126,7 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
 		return ;
 	}
 	client->setNickname(tokens[1]);
+	this->_nicknames.insert(std::pair<std::string, Client*>(tokens[1], client));
 	// sendMessage(NULL, client, 0, 0, "Nickname Set to " + tokens[1]);
 	checkAndAuth(client);
 }
@@ -145,6 +142,29 @@ void	Server::_passCommand(Client *clt, std::vector<std::string> tokens)
 	clt->setClaimedPsswd(tokens[1]);
 	// sendMessage(NULL, clt, 0, 0, "PASSWD SET ");
 	checkAndAuth(clt);
+}
+
+void	Server::privMsg(Client *client, std::vector<std::string> tokens)
+{
+	std::string msg = "";
+	if (tokens.size() < 2)
+	{
+		sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "");
+		return;
+	}
+	else if (nickAvailable(tokens[1]))
+	{
+		sendMessage(NULL, client, ERR_NOSUCHNICK, 0, "");
+		return;
+	}
+	else if (tokens[2][0] != ':')
+		sendMessage(client, _nicknames[tokens[1]], 0, 0, tokens[2]);
+	else
+	{
+		for (size_t i = 2; i < tokens.size(); ++i)
+			msg += tokens[i] + " ";
+		sendMessage(client, _nicknames[tokens[1]], 0, 0, msg);
+	}
 }
 
 // Channel *Server::_findChannel(std::string channelName) const
@@ -241,8 +261,8 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
 	else if (command == "PASS" || command == "pass")
 		_passCommand(client, tokens);
 	
-    // else if (command == "PRIVMSG" || command == "privmsg") // needs fixes
-    //     _privmsgCommand(client, tokens);
+    else if (command == "PRIVMSG" || command == "privmsg") // needs fixes
+        privMsg(client, tokens);
 }
 
 std::string Server::normalizeLineEnding(std::string &str)
@@ -388,7 +408,7 @@ void Server::InitSocket()
 
 bool	Server::nickAvailable(std::string nick)
 {
-	return (!this->_nicknames[nick]);
+	return (this->_nicknames.count(nick) == 0);
 }
 
 //********************** - Constr destr and getters - **********************//
