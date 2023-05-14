@@ -2,7 +2,7 @@ SRCS			= Server.cpp Channel.cpp main.cpp Client.cpp
 OBJS			= $(SRCS:.cpp=.o)
 HEADERS			= Server.hpp Client.hpp Channel.hpp
 
-CXXFLAGS		= -Wall -Wextra -Werror -std=c++98 
+CXXFLAGS		= -Wall -Wextra -Werror -std=c++98
 
 NAME			= ircserv
 
