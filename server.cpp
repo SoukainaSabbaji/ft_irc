@@ -92,7 +92,7 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
 	else if (!ERRCODE && !RPLCODE)
 		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
 	else
-		message = ":" + this->_serverName + " ERROR " + this->errCodeToStr[ERRCODE] + " sixie :fuck you\n\r"; // still not working
+		message = ":" + this->_serverName + " ERROR " + this->errCodeToStr[ERRCODE] + " " + dst->getNickname() + " :" + message + "\r\n"; // still not working
 	// send(dst->getFd(), "welcome t", message.length(), 0);
 	send(dst->getFd(), message.c_str(), message.length(), 0);
 
