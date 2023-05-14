@@ -41,13 +41,13 @@ void Server::removeClient(int client_fd)
 
 void	Server::checkAndAuth(Client *clt)
 {
-	if (!clt->getNickname().empty() && !clt->getUsername().empty() && clt->getClaimedPsswd() == this->_password)
+	if (!clt->isAuthenticated() && !clt->getNickname().empty() && !clt->getUsername().empty() && clt->getClaimedPsswd() == this->_password)
 	{
 		clt->setAuthentication(true);
 		std::cout<<clt->getNickname()<<" authenticated"<<std::endl;
 		sendMessage(NULL, clt, 0, 1, "WELCOME TO THE BEST IRC SERVER MADE WITH LOVE BY SOUKI && SIXIE WE NAMED SOUKIXIE AS IT'S A TEAM WORK AND WE ARE THE BEST TEAM EVER");
 		sendMessage(NULL, clt, 0, 2, "your host is " + this->_serverName +", running the ver 0.0.1");
-		sendMessage(NULL, clt, 0, 3, "this server Was creates at " + this->creationDate);
+		sendMessage(NULL, clt, 0, 3, "this server Was creates at " + this->creationDate );
 		sendMessage(NULL, clt, 0, 4, "AHAHA this feels like HELLO WORLD");
 	}
 }
@@ -88,9 +88,10 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
 		_host = tmphost;
 		free(tmphost); //check if we are allowed to use it
 	}
+	// std::cout<<this->rplCodeToStr[RPLCODE]<<std::endl;
 	if (!src && RPLCODE)
 		message = ":" + _host + " " + this->rplCodeToStr[RPLCODE] + " " + dst->getNickname() + " :" + message + "\n\r";
-	if (!src && !ERRCODE)
+	else if (!src && !ERRCODE)
 		message = ":" + this->_serverName + "!" + this->_serverName +"@"+_host +" PRIVMSG " + dst->getNickname() + " :"+ message +"\n\r";
 	else if (!ERRCODE && !RPLCODE)
 		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " :"+ message +"\n\r"; // works perfect for private messages can not send messages from server
@@ -110,7 +111,7 @@ void	Server::_userCommand(Client *client, std::vector<std::string> tokens)
         return;
     }
 	client->setUsername(tokens[1]);
-	sendMessage(NULL, client, 0, 0,"Username Set to " + tokens[1]);
+	// sendMessage(NULL, client, 0, 0,"Username Set to " + tokens[1]);
 	checkAndAuth(client);
 }
 
@@ -129,7 +130,7 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
 		return ;
 	}
 	client->setNickname(tokens[1]);
-	sendMessage(NULL, client, 0, 0, "Nickname Set to " + tokens[1]);
+	// sendMessage(NULL, client, 0, 0, "Nickname Set to " + tokens[1]);
 	checkAndAuth(client);
 }
 
@@ -142,7 +143,7 @@ void	Server::_passCommand(Client *clt, std::vector<std::string> tokens)
         return;
     }
 	clt->setClaimedPsswd(tokens[1]);
-	sendMessage(NULL, clt, 0, 0, "PASSWD SET ");
+	// sendMessage(NULL, clt, 0, 0, "PASSWD SET ");
 	checkAndAuth(clt);
 }
 
@@ -405,6 +406,7 @@ std::string	Server::getDate(void)
 	tmp = ctime(&rawtime);
 	now = tmp;
 	// free(tmp);
+	now = now.substr(0, now.size() - 1);
 	return (now);
 }
 
