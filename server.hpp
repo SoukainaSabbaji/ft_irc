@@ -67,11 +67,11 @@ class Server
         void _privmsgCommand(Client *client, std::vector<std::string> tokens);
 		void	privMsg(Client *client, std::vector<std::string> tokens);
         Channel *_findChannel(std::string channelName) const;
-        void    findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message);
-        void    findChannelAndSendMessage(Client *client, std::string channelName, std::string message);
 		char	*getAddr(Client *clt);
 		void	checkAndAuth(Client *clt);
 		void	initCode();
+        void    BroadcastMessage(Client *client, Channel *target,const std::string &message);
+        friend class Channel;
         // Exceptions 
         class InvalidSocketFd : public std::exception
         {

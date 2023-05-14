@@ -92,10 +92,10 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
 	else if (!ERRCODE && !RPLCODE)
 		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
 	else
-		message = ":" + this->_serverName + " ERROR " + this->errCodeToStr[ERRCODE] + " " + dst->getNickname() + " :" + message + "\r\n"; // still not working
-	// send(dst->getFd(), "welcome t", message.length(), 0);
-	send(dst->getFd(), message.c_str(), message.length(), 0);
+		message = ":" + this->_serverName + " " + this->errCodeToStr[ERRCODE] + " " + (dst->getNickname().empty() ? "*" : dst->getNickname()) + message + "\r\n"; // still not working
 
+    // send(dst->getFd(), "welcome t", message.length(), 0);
+	send(dst->getFd(), message.c_str(), message.length(), 0);
 }
 
 void	Server::_userCommand(Client *client, std::vector<std::string> tokens)
@@ -103,7 +103,7 @@ void	Server::_userCommand(Client *client, std::vector<std::string> tokens)
 	if (tokens.size() < 4)
     {
         // send error message to client
-        sendMessage(NULL, client, ERR_NEEDMOREPARAMS ,0,"NULL");
+        sendMessage(NULL, client, ERR_NEEDMOREPARAMS ,0,"USER :Not enough parameters");
         return;
     }
 	client->setUsername(tokens[1]);
@@ -117,17 +117,16 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
     if (tokens.size() < 2)
     {
         // send error message to client
-        sendMessage(NULL, client, ERR_NONICKNAMEGIVEN ,0,"NULL");
+        sendMessage(NULL, client, ERR_NONICKNAMEGIVEN ,0,":No nickname given");
         return;
     }
 	if (!nickAvailable(tokens[1]))
 	{
-		sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0,"");
+		sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0, " :" + tokens[1] + " :Nickname already in use");
 		return ;
 	}
 	client->setNickname(tokens[1]);
 	this->_nicknames.insert(std::pair<std::string, Client*>(tokens[1], client));
-	// sendMessage(NULL, client, 0, 0, "Nickname Set to " + tokens[1]);
 	checkAndAuth(client);
 }
 
@@ -136,7 +135,7 @@ void	Server::_passCommand(Client *clt, std::vector<std::string> tokens)
 	if (tokens.size() < 2)
     {
         // send error message to client
-        sendMessage(NULL, clt, ERR_NEEDMOREPARAMS ,0,"NULL");
+        sendMessage(NULL, clt, ERR_NEEDMOREPARAMS ,0,"NICK :Not enough parameters");
         return;
     }
 	clt->setClaimedPsswd(tokens[1]);
@@ -144,107 +143,140 @@ void	Server::_passCommand(Client *clt, std::vector<std::string> tokens)
 	checkAndAuth(clt);
 }
 
-void	Server::privMsg(Client *client, std::vector<std::string> tokens)
+// void	Server::privMsg(Client *client, std::vector<std::string> tokens)
+// {
+// 	std::string msg = "";
+// 	if (!client->isAuthenticated())
+// 	{
+// 		sendMessage(NULL, client, ERR_NOLOGIN, 0, "");
+// 		return;
+// 	}
+// 	if (tokens.size() < 3)
+// 	{
+// 		sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "");
+// 		return;
+// 	}
+// 	else if (nickAvailable(tokens[1]))
+// 	{
+// 		sendMessage(NULL, client, ERR_NOSUCHNICK, 0, "");
+// 		return;
+// 	}
+// 	// else if (tokens[2][0] != ':')
+// 	// 	sendMessage(client, _nicknames[tokens[1]], 0, 0, tokens[2]);
+// 	else
+// 	{
+// 		for (size_t i = 2; i < tokens.size(); ++i)
+// 			msg += tokens[i] + " ";
+// 		std::cout<<msg<<std::endl;
+// 		std::cout<<_nicknames[tokens[1]]->getFd();
+// 		sendMessage(client, _nicknames[tokens[1]], 0, 0, msg);
+// 	}
+// }
+Channel *Server::_findChannel(std::string channelName) const
 {
-	std::string msg = "";
-	if (!client->isAuthenticated())
+    std::vector<Channel*>::const_iterator i;
+    for(i = _channels.cbegin(); i != _channels.cend(); i++)
+    {
+        if ((*i)->getChannelName() == channelName)
+                return (*i);
+    }
+    return (NULL);
+}
+
+
+void    Server::BroadcastMessage(Client *client, Channel *target, const std::string &message)
+{
+    std::vector<Client*> clients = target->getClients();
+    for (size_t i = 0; i < clients.size(); i++)
+    {
+        Client *clientTarg = clients[i];
+        sendMessage(client, clientTarg,0 , 0, message);
+    }
+}
+
+void    SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message)
+{
+    while (!recipients.empty())
+    {
+        Client *target = _nicknames[recipients.back()];
+        sendMessage(client, target, 0, 0, message);
+        recipients.pop_back();
+    }
+}
+
+void    CheckAuthAndSend(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel)
+{
+    if (!client->isAuthenticated())
 	{
 		sendMessage(NULL, client, ERR_NOLOGIN, 0, "");
 		return;
 	}
+    if (isChannel)
+    {
+        Channel *target = _findChannel(recipients[0]);
+        if (target)
+            std::cout<<"found channel"<<std::endl;
+            // BroadcastMessage(client, target, message);
+        else
+        {
+            sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, "");
+            return;
+        }
+    }
+    else 
+        SendToRecipients(client, recipients, message);
+}
+
+void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message)
+{
+    //this function checks if the recipient is a channel of a user and sends the message to the appropriate function
+    while (!recipients.empty())
+    {
+        std::string recipient = recipients.back();
+        //find if recipient is a channel
+        if (recipient[0] == '#')
+            CheckAuthAndSend(client, recipients, message, true);
+
+        else
+            CheckAuthAndSend(client, recipient, message, false);
+    }
+
+}
+// PRIVMSG command 
+void Server::_privmsgCommand(Client *client, std::vector<std::string> tokens)
+{
+    //check number of parameters
 	if (tokens.size() < 3)
 	{
 		sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "");
 		return;
 	}
-	else if (nickAvailable(tokens[1]))
-	{
-		sendMessage(NULL, client, ERR_NOSUCHNICK, 0, "");
-		return;
-	}
-	// else if (tokens[2][0] != ':')
-	// 	sendMessage(client, _nicknames[tokens[1]], 0, 0, tokens[2]);
-	else
-	{
-		for (size_t i = 2; i < tokens.size(); ++i)
-			msg += tokens[i] + " ";
-		std::cout<<msg<<std::endl;
-		std::cout<<_nicknames[tokens[1]]->getFd();
-		sendMessage(client, _nicknames[tokens[1]], 0, 0, msg);
-	}
+    //fetch target and message
+    std::string target = tokens[1];
+    std::vector<std::string> recipients;
+    //separate recoipients
+    if (target.find(',') != std::string::npos)
+    {
+        std::istringstream tokenStream(target);
+        std::string token;
+        while (std::getline(tokenStream, token, ','))
+        {
+            recipients.push_back(token);
+        }
+    }
+    else
+    {
+        recipients.push_back(target);
+    }
+    std::string message = "";
+	for (size_t i = 2; i < tokens.size(); ++i)
+		message += tokens[i] + " ";
+    //send message to all recipients
+    //find targets and send message
+    findTargetsAndSendMessage(client, recipients, message);
 }
 
-// Channel *Server::_findChannel(std::string channelName) const
-// {
-//     std::vector<Channel*>::const_iterator i;
-//     for(i = _channels.cbegin(); i != _channels.cend(); i++)
-//     {
-//         if ((*i)->getChannelName() == channelName)
-//                 return (*i);
-//     }
-//     return (NULL);
-// }
 
-// void    Server::findChannelAndSendMessage(Client *client, std::string channelName, std::string message)
-// {
-//     //gotta add a authorization check here
-//     // if the user is not in the channel he cannot send a message to it
-//     Channel *target = _findChannel(channelName); 
-//     if (target)
-//     {
-//         std::vector<Client*> clients = target->getClients();
-//         while (!clients.empty())
-//         {
-//             // sendMessage(clients.back()->getFd(), ":" + client->getNickname() + " PRIVMSG " + channelName + " :" + message + "\r\n");
-//             clients.pop_back();
-//         }
-//     }
-// }
-
-// void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message)
-// {
-//     //this function checks if the recipient is a channel of a user and sends the message to the appropriate function
-//     while (!recipients.empty())
-//     {
-//         std::string recipient = recipients.back();
-//         //find if recipient is a channel
-//         if (recipient[0] == '#')
-//             findChannelAndSendMessage(client, recipient, message);
-//     }
-
-// }
-
-//PRIVMSG command 
-// void Server::_privmsgCommand(Client *client, std::vector<std::string> tokens)
-// {
-//     //check number of parameters
-//     if (tokens.size() < 3)
-//     {
-//         // sendMessage(client->getFd(), ":localhost 461 " + (client->getNickname().empty() ? "*" : client->getNickname()) + " " + tokens[1] +  " :Not enough parameters\r\n");
-//         return;
-//     }
-//     //fetch target and message
-//     std::string target = tokens[1];
-//     std::string message = tokens[2];
-//     std::vector<std::string> recipients;
-//     //separate recoipients
-//     if (target.find(',') != std::string::npos)
-//     {
-//         std::istringstream tokenStream(target);
-//         std::string token;
-//         while (std::getline(tokenStream, token, ','))
-//         {
-//             recipients.push_back(token);
-//         }
-//     }
-//     else
-//     {
-//         recipients.push_back(target);
-//     }
-//     //send message to all recipients
-//     //find targets and send message
-//     findTargetsAndSendMessage(client, recipients, message);
-// }
 
 void Server::processCommand(Client *client, std::vector<std::string> tokens)
 {
@@ -267,7 +299,6 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
 		_userCommand(client, tokens);
 	else if (command == "PASS" || command == "pass")
 		_passCommand(client, tokens);
-	
     else if (command == "PRIVMSG" || command == "privmsg") // needs fixes
         privMsg(client, tokens);
 }

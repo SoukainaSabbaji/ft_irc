@@ -60,3 +60,4 @@ Client *Channel::getOwner() const
 {
     return _owner;
 }
+
