@@ -50,6 +50,7 @@ class Server
         Server();
         Server(int port, const std::string &password);
         ~Server();
+		void    CheckAuthAndSend(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel);
         int getFd() const;
         int getPort() const;
         std::string getPassword() const;
@@ -71,6 +72,7 @@ class Server
 		void	checkAndAuth(Client *clt);
 		void	initCode();
         void    BroadcastMessage(Client *client, Channel *target,const std::string &message);
+		void    findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message);
         friend class Channel;
         // Exceptions 
         class InvalidSocketFd : public std::exception

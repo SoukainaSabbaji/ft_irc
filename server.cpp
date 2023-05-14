@@ -204,7 +204,7 @@ void    SendToRecipients(Client *client, std::vector<std::string> recipients, st
     }
 }
 
-void    CheckAuthAndSend(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel)
+void    Server::CheckAuthAndSend(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel)
 {
     if (!client->isAuthenticated())
 	{
@@ -238,7 +238,7 @@ void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::strin
             CheckAuthAndSend(client, recipients, message, true);
 
         else
-            CheckAuthAndSend(client, recipient, message, false);
+            CheckAuthAndSend(client, recipients, message, false);
     }
 
 }
