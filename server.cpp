@@ -143,35 +143,6 @@ void	Server::_passCommand(Client *clt, std::vector<std::string> tokens)
 	checkAndAuth(clt);
 }
 
-// void	Server::privMsg(Client *client, std::vector<std::string> tokens)
-// {
-// 	std::string msg = "";
-// 	if (!client->isAuthenticated())
-// 	{
-// 		sendMessage(NULL, client, ERR_NOLOGIN, 0, "");
-// 		return;
-// 	}
-// 	if (tokens.size() < 3)
-// 	{
-// 		sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "");
-// 		return;
-// 	}
-// 	else if (nickAvailable(tokens[1]))
-// 	{
-// 		sendMessage(NULL, client, ERR_NOSUCHNICK, 0, "");
-// 		return;
-// 	}
-// 	// else if (tokens[2][0] != ':')
-// 	// 	sendMessage(client, _nicknames[tokens[1]], 0, 0, tokens[2]);
-// 	else
-// 	{
-// 		for (size_t i = 2; i < tokens.size(); ++i)
-// 			msg += tokens[i] + " ";
-// 		std::cout<<msg<<std::endl;
-// 		std::cout<<_nicknames[tokens[1]]->getFd();
-// 		sendMessage(client, _nicknames[tokens[1]], 0, 0, msg);
-// 	}
-// }
 Channel *Server::_findChannel(std::string channelName) const
 {
     std::vector<Channel*>::const_iterator i;
@@ -194,13 +165,21 @@ void    Server::BroadcastMessage(Client *client, Channel *target, const std::str
     }
 }
 
-void    SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message)
+void    Server::SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message)
 {
     while (!recipients.empty())
     {
-        Client *target = _nicknames[recipients.back()];
-        sendMessage(client, target, 0, 0, message);
-        recipients.pop_back();
+        if (nickAvailable(recipients.back()))
+        {
+            sendMessage(NULL, client, ERR_NOSUCHNICK, 0, " " + recipients.back() + " :No such nick/channel");
+            return;
+        }
+        else 
+        {
+            Client *target = _nicknames[recipients.back()];
+            sendMessage(client, target, 0, 0, message);
+            recipients.pop_back();
+        }
     }
 }
 
@@ -236,14 +215,14 @@ void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::strin
         //find if recipient is a channel
         if (recipient[0] == '#')
             CheckAuthAndSend(client, recipients, message, true);
-
         else
             CheckAuthAndSend(client, recipients, message, false);
+        recipients.pop_back();
     }
 
 }
 // PRIVMSG command 
-void Server::_privmsgCommand(Client *client, std::vector<std::string> tokens)
+void Server::privMsg(Client *client, std::vector<std::string> tokens)
 {
     //check number of parameters
 	if (tokens.size() < 3)
@@ -271,8 +250,6 @@ void Server::_privmsgCommand(Client *client, std::vector<std::string> tokens)
     std::string message = "";
 	for (size_t i = 2; i < tokens.size(); ++i)
 		message += tokens[i] + " ";
-    //send message to all recipients
-    //find targets and send message
     findTargetsAndSendMessage(client, recipients, message);
 }
 

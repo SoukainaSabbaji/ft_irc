@@ -73,6 +73,7 @@ class Server
 		void	initCode();
         void    BroadcastMessage(Client *client, Channel *target,const std::string &message);
 		void    findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message);
+        void    SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message);
         friend class Channel;
         // Exceptions 
         class InvalidSocketFd : public std::exception
