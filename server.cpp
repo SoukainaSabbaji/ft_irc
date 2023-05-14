@@ -187,18 +187,17 @@ void    Server::CheckAuthAndSend(Client *client, std::vector<std::string> recipi
 {
     if (!client->isAuthenticated())
 	{
-		sendMessage(NULL, client, ERR_NOLOGIN, 0, "");
+		sendMessage(NULL, client, ERR_NOLOGIN, 0, client->getNickname() + " :User not logged in");
 		return;
 	}
     if (isChannel)
     {
         Channel *target = _findChannel(recipients[0]);
         if (target)
-            std::cout<<"found channel"<<std::endl;
-            // BroadcastMessage(client, target, message);
+            BroadcastMessage(client, target, message);
         else
         {
-            sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, "");
+            sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + recipients[0] + " :No such channel");
             return;
         }
     }
@@ -227,7 +226,7 @@ void Server::privMsg(Client *client, std::vector<std::string> tokens)
     //check number of parameters
 	if (tokens.size() < 3)
 	{
-		sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "");
+		sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " PRIVMSG :Not enough parameters");
 		return;
 	}
     //fetch target and message
