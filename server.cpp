@@ -86,11 +86,11 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
 		// free(tmphost); //check if we are allowed to use it
 	// std::cout<<this->rplCodeToStr[RPLCODE]<<std::endl;
 	if (!src && RPLCODE)
-		message = ":" + _host + " " + this->rplCodeToStr[RPLCODE] + " " + dst->getNickname() + " :" + message + "\n\r";
+		message = ":" + _host + " " + this->rplCodeToStr[RPLCODE] + " " + dst->getNickname() + " :" + message + "\r\n";
 	else if (!src && !ERRCODE)
-		message = ":" + this->_serverName + "!" + this->_serverName +"@"+_host +" PRIVMSG " + dst->getNickname() + " :"+ message +"\n\r";
+		message = ":" + this->_serverName + "!" + this->_serverName +"@"+_host +" PRIVMSG " + dst->getNickname() + " :"+ message +"\r\n";
 	else if (!ERRCODE && !RPLCODE)
-		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " :"+ message +"\n\r"; // works perfect for private messages can not send messages from server
+		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
 	else
 		message = ":" + this->_serverName + " ERROR " + this->errCodeToStr[ERRCODE] + " sixie :fuck you\n\r"; // still not working
 	// send(dst->getFd(), "welcome t", message.length(), 0);
@@ -147,7 +147,12 @@ void	Server::_passCommand(Client *clt, std::vector<std::string> tokens)
 void	Server::privMsg(Client *client, std::vector<std::string> tokens)
 {
 	std::string msg = "";
-	if (tokens.size() < 2)
+	if (!client->isAuthenticated())
+	{
+		sendMessage(NULL, client, ERR_NOLOGIN, 0, "");
+		return;
+	}
+	if (tokens.size() < 3)
 	{
 		sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "");
 		return;
@@ -157,12 +162,14 @@ void	Server::privMsg(Client *client, std::vector<std::string> tokens)
 		sendMessage(NULL, client, ERR_NOSUCHNICK, 0, "");
 		return;
 	}
-	else if (tokens[2][0] != ':')
-		sendMessage(client, _nicknames[tokens[1]], 0, 0, tokens[2]);
+	// else if (tokens[2][0] != ':')
+	// 	sendMessage(client, _nicknames[tokens[1]], 0, 0, tokens[2]);
 	else
 	{
 		for (size_t i = 2; i < tokens.size(); ++i)
 			msg += tokens[i] + " ";
+		std::cout<<msg<<std::endl;
+		std::cout<<_nicknames[tokens[1]]->getFd();
 		sendMessage(client, _nicknames[tokens[1]], 0, 0, msg);
 	}
 }
