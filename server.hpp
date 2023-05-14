@@ -50,7 +50,7 @@ class Server
         Server();
         Server(int port, const std::string &password);
         ~Server();
-		void    CheckAuthAndSend(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel);
+		void    SendToRecipient(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel);
         int getFd() const;
         int getPort() const;
         std::string getPassword() const;

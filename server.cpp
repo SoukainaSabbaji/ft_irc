@@ -183,13 +183,8 @@ void    Server::SendToRecipients(Client *client, std::vector<std::string> recipi
     }
 }
 
-void    Server::CheckAuthAndSend(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel)
+void    Server::SendToRecipient(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel)
 {
-    if (!client->isAuthenticated())
-	{
-		sendMessage(NULL, client, ERR_NOLOGIN, 0, client->getNickname() + " :User not logged in");
-		return;
-	}
     if (isChannel)
     {
         Channel *target = _findChannel(recipients[0]);
@@ -213,9 +208,9 @@ void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::strin
         std::string recipient = recipients.back();
         //find if recipient is a channel
         if (recipient[0] == '#')
-            CheckAuthAndSend(client, recipients, message, true);
+            SendToRecipient(client, recipients, message, true);
         else
-            CheckAuthAndSend(client, recipients, message, false);
+            SendToRecipient(client, recipients, message, false);
         recipients.pop_back();
     }
 
@@ -224,9 +219,20 @@ void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::strin
 void Server::privMsg(Client *client, std::vector<std::string> tokens)
 {
     //check number of parameters
-	if (tokens.size() < 3)
+    if (!client->isAuthenticated())
 	{
-		sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " PRIVMSG :Not enough parameters");
+		sendMessage(NULL, client, ERR_NOLOGIN, 0, client->getNickname() + " :User not logged in");
+		return;
+	}
+    if (tokens.size() < 2)
+    {
+        //send message to client
+        sendMessage(NULL, client, ERR_NORECIPIENT, 0, " :No recipient given " + tokens[0]);
+        return;
+    }
+	else if (tokens.size() < 3)
+	{
+		sendMessage(NULL, client, ERR_NOTEXTTOSEND, 0, " :No text to send");
 		return;
 	}
     //fetch target and message
@@ -541,3 +547,5 @@ bool Server::isRunning() const
 
 //privmsg format
 //:sender_nick!sender_user@sender_host PRIVMSG target :message_text
+
+//send an error when no text is sent through notice , no user not found error
