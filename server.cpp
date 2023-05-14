@@ -87,9 +87,11 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
 	// std::cout<<this->rplCodeToStr[RPLCODE]<<std::endl;
 	if (!src && RPLCODE)
 		message = ":" + _host + " " + this->rplCodeToStr[RPLCODE] + " " + dst->getNickname() + " :" + message + "\r\n";
-	else if (!src && !ERRCODE)
+	else if (!src && ERRCODE == 0)
 		message = ":" + this->_serverName + "!" + this->_serverName +"@"+_host +" PRIVMSG " + dst->getNickname() + " :"+ message +"\r\n";
-	else if (!ERRCODE && !RPLCODE)
+	else if (ERRCODE < 0)
+        message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" NOTICE " + dst->getNickname() + " "+ message +"\r\n"; 
+    else if (!ERRCODE && !RPLCODE)
 		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
 	else
 		message = ":" + this->_serverName + " " + this->errCodeToStr[ERRCODE] + " " + (dst->getNickname().empty() ? "*" : dst->getNickname()) + message + "\r\n"; // still not working
@@ -165,11 +167,11 @@ void    Server::BroadcastMessage(Client *client, Channel *target, const std::str
     }
 }
 
-void    Server::SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message)
+void    Server::SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message, std::string command)
 {
     while (!recipients.empty())
     {
-        if (nickAvailable(recipients.back()))
+        if (nickAvailable(recipients.back()) && command == "PRIVMSG")
         {
             sendMessage(NULL, client, ERR_NOSUCHNICK, 0, " " + recipients.back() + " :No such nick/channel");
             return;
@@ -177,13 +179,16 @@ void    Server::SendToRecipients(Client *client, std::vector<std::string> recipi
         else 
         {
             Client *target = _nicknames[recipients.back()];
-            sendMessage(client, target, 0, 0, message);
+            if (command == "PRIVMSG")
+                sendMessage(client, target, 0, 0, message);
+            else if (command == "NOTICE")
+                sendMessage(client, target, -1, 0, message);
             recipients.pop_back();
         }
     }
 }
 
-void    Server::SendToRecipient(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel)
+void    Server::SendToRecipient(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel, std::string command)
 {
     if (isChannel)
     {
@@ -192,25 +197,29 @@ void    Server::SendToRecipient(Client *client, std::vector<std::string> recipie
             BroadcastMessage(client, target, message);
         else
         {
-            sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + recipients[0] + " :No such channel");
-            return;
+            if (command == "PRIVMSG")
+            {
+                sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + recipients[0] + " :No such channel");
+                return;
+            }
         }
     }
     else 
-        SendToRecipients(client, recipients, message);
+        SendToRecipients(client, recipients, message, command);
 }
 
-void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message)
+void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message, std::string command)
 {
-    //this function checks if the recipient is a channel of a user and sends the message to the appropriate function
+    //this function checks if the recipient is a channel or a user 
+    //and sends the message to the appropriate destination
     while (!recipients.empty())
     {
         std::string recipient = recipients.back();
         //find if recipient is a channel
         if (recipient[0] == '#')
-            SendToRecipient(client, recipients, message, true);
+            SendToRecipient(client, recipients, message, true, command);
         else
-            SendToRecipient(client, recipients, message, false);
+            SendToRecipient(client, recipients, message, false, command);
         recipients.pop_back();
     }
 
@@ -255,7 +264,7 @@ void Server::privMsg(Client *client, std::vector<std::string> tokens)
     std::string message = "";
 	for (size_t i = 2; i < tokens.size(); ++i)
 		message += tokens[i] + " ";
-    findTargetsAndSendMessage(client, recipients, message);
+    findTargetsAndSendMessage(client, recipients, message, tokens[0]);
 }
 
 
@@ -281,7 +290,7 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
 		_userCommand(client, tokens);
 	else if (command == "PASS" || command == "pass")
 		_passCommand(client, tokens);
-    else if (command == "PRIVMSG" || command == "privmsg") // needs fixes
+    else if (command == "PRIVMSG" || command == "privmsg" || command == "NOTICE" || command == "notice") // needs fixes
         privMsg(client, tokens);
 }
 
