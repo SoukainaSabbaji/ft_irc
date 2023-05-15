@@ -32,6 +32,7 @@ class Channel
         std::vector<Client*>     _clients;
         std::vector<std::string> _bannedUsers;
         std::vector<std::string> _operators;
+        
     public:
         Channel();
         Channel(const std::string &name, const std::string &topic, const std::string &mode, int maxUsers);
@@ -46,6 +47,7 @@ class Channel
         std::vector<std::string> getBannedUsers() const;
         std::vector<std::string> getOperators() const;
         std::string getChannelName() const;
+        std::string getUsersList() const;
         bool isOnChannel(Client *client) const;
         void addClient(Client *client);
         bool isEmpty() const;

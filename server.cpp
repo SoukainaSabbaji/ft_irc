@@ -89,11 +89,11 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
 	if (!src && RPLCODE)
 		message = ":" + _host + " " + this->rplCodeToStr[RPLCODE] + " " + dst->getNickname() + " :" + message + "\r\n";
 	else if (!src && ERRCODE == 0)
-		message = ":" + this->_serverName + "!" + this->_serverName +"@"+_host +" PRIVMSG " + dst->getNickname() + " :"+ message +"\r\n";
+		message = ":" + this->_serverName + "!" + this->_serverName +"@"+_host +" _privMsgCommand " + dst->getNickname() + " :"+ message +"\r\n";
 	else if (ERRCODE < 0)
         message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" NOTICE " + dst->getNickname() + " "+ message +"\r\n"; 
     else if (!ERRCODE && !RPLCODE)
-		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
+		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" _privMsgCommand " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
 	else
 		message = ":" + this->_serverName + " " + this->errCodeToStr[ERRCODE] + " " + (dst->getNickname().empty() ? "*" : dst->getNickname()) + message + "\r\n"; // still not working
 
@@ -181,7 +181,7 @@ void    Server::SendToRecipients(Client *client, std::vector<std::string> recipi
 {
     while (!recipients.empty())
     {
-        if (nickAvailable(recipients.back()) && command == "PRIVMSG")
+        if (nickAvailable(recipients.back()) && command == "_privMsgCommand")
         {
             sendMessage(NULL, client, ERR_NOSUCHNICK, 0, " " + recipients.back() + " :No such nick/channel");
             return;
@@ -189,7 +189,7 @@ void    Server::SendToRecipients(Client *client, std::vector<std::string> recipi
         else 
         {
             Client *target = _nicknames[recipients.back()];
-            if (command == "PRIVMSG")
+            if (command == "_privMsgCommand")
                 sendMessage(client, target, 0, 0, message);
             else if (command == "NOTICE" && !ContainsSpace(message))
                 sendMessage(client, target, -1, 0, message);
@@ -207,7 +207,8 @@ void    Server::SendToRecipient(Client *client, std::vector<std::string> recipie
             BroadcastMessage(client, target, message);
         else
         {
-            if (command == "PRIVMSG")
+            //only display error message if the command is PRIVMSG
+            if (command == "_privMsgCommand")
             {
                 sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + recipients[0] + " :No such channel");
                 return;
@@ -234,8 +235,10 @@ void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::strin
     }
 
 }
-// PRIVMSG command 
-void Server::privMsg(Client *client, std::vector<std::string> tokens)
+/// @brief /PRIVMSG command
+/// @param client  client that sent the command
+/// @param tokens  command and parameters
+void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
 {
     //check number of parameters
     if (!client->isAuthenticated())
@@ -245,7 +248,6 @@ void Server::privMsg(Client *client, std::vector<std::string> tokens)
 	}
     if (tokens.size() < 2)
     {
-        //send message to client
         sendMessage(NULL, client, ERR_NORECIPIENT, 0, " :No recipient given " + tokens[0]);
         return;
     }
@@ -308,6 +310,13 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
     while (channels.size())
     {
         std::string channelName = channels.back();
+        //check if the first character is either # or &
+        if (channelName[0] != '#' && channelName[0] != '&')
+        {
+            sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + channelName + " :No such channel");
+            channels.pop_back();
+            continue;
+        }
         Channel *channel = _findChannel(channelName);
         if (!channel)
         {
@@ -324,7 +333,7 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
         }
         channel->addClient(client);
         sendMessage(NULL, client, RPL_TOPIC, 0, " " + channelName + " :" + channel->getTopic());
-        sendMessage(NULL, client, RPL_NAMREPLY, 0, " = " + channelName + " :" + channel->getNicknames());
+        sendMessage(NULL, client, RPL_NAMREPLY, 0, " = " + channelName + " :" + channel->getUsersList());
         sendMessage(NULL, client, RPL_ENDOFNAMES, 0, " " + channelName + " :End of NAMES list");
         channels.pop_back();
     }
@@ -352,8 +361,8 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
 		_userCommand(client, tokens);
 	else if (command == "PASS" || command == "pass")
 		_passCommand(client, tokens);
-    else if (command == "PRIVMSG" || command == "privmsg" || command == "NOTICE" || command == "notice") // needs fixes
-        privMsg(client, tokens);
+    else if (command == "_privMsgCommand" || command == "_privMsgCommand" || command == "NOTICE" || command == "notice") // needs fixes
+        _privMsgCommand(client, tokens);
     else if (command == "JOIN" || command == "join")
         _joinCommand(client, tokens);
 }
@@ -465,6 +474,9 @@ void Server::initCode()
 	this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_YOURHOST, "002"));
 	this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_CREATED, "003"));
 	this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_MYINFO, "004"));
+    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_TOPIC, "332"));
+    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_NAMREPLY, "353"));
+    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_ENDOFNAMES, "366"));
 }
 
 void Server::InitSocket()
@@ -621,7 +633,7 @@ bool Server::isRunning() const
 //error message format
 //:server_name ERROR error_code target :error_message
 
-//privmsg format
-//:sender_nick!sender_user@sender_host PRIVMSG target :message_text
+//_privMsgCommand format
+//:sender_nick!sender_user@sender_host _privMsgCommand target :message_text
 
 //send an error when no text is sent through notice , no user not found error

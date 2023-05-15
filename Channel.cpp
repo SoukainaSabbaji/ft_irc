@@ -59,6 +59,17 @@ void Channel::removeClient(Client *client)
     }
 }
 
+std::string Channel::getUsersList() const
+{
+    std::string userList;
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        userList += _clients[i]->getNickname() + " ";
+    }
+    return userList;
+}
+
+
 void Channel::setOperator(Client *client)
 {
     _operators.push_back(client->getNickname());

@@ -4,5 +4,5 @@
 -- implement channels lol
 -- answer ping pong lol
 -- edit NICK to check if the user already has a nickname and wants to change it
--- NOTICE and PRIVMSG have an issue with spaces , counts the spaces as a token 
+-- NOTICE and _privMsgCommand have an issue with spaces , counts the spaces as a token 
 

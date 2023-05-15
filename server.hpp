@@ -65,8 +65,8 @@ class Server
 		void _passCommand(Client *client, std::vector<std::string> tokens);
         void _joinCommand(Client *client, std::vector<std::string> tokens);
         std::string    readFromClient(int client_fd);
-        void _privmsgCommand(Client *client, std::vector<std::string> tokens);
-		void	privMsg(Client *client, std::vector<std::string> tokens);
+        void __privMsgCommandCommand(Client *client, std::vector<std::string> tokens);
+		void	_privMsgCommand(Client *client, std::vector<std::string> tokens);
         Channel *_findChannel(std::string channelName) const;
 		char	*getAddr(Client *clt);
 		void	checkAndAuth(Client *clt);
