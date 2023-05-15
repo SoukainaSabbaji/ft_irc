@@ -1,8 +1,8 @@
 -- password check if wrong and return error
 -- message randomly sent twice to a client 
 -- make a nickname available when the client it belongs to disconnects 
--- implement notice after thorough testing ofc 
 -- implement channels lol
 -- answer ping pong lol
 -- edit NICK to check if the user already has a nickname and wants to change it
+-- NOTICE and PRIVMSG have an issue with spaces , counts the spaces as a token 
 

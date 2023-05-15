@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include "Client.hpp"
+
 //********************** - Exceptions - **********************//
 
 const char *Server::InvalidSocketFd::what() const throw()
@@ -167,6 +168,15 @@ void    Server::BroadcastMessage(Client *client, Channel *target, const std::str
     }
 }
 
+bool    ContainsSpace(std::string str)
+{
+    for (size_t i = 0; i < str.length(); i++)
+    {
+        if ((str[i] == ' ' || str[i] == '\t' || str[i] == '\r' || str[i] == '\n') && str[i+1] == '\n')
+            return (true);
+    }
+    return (false);
+}
 void    Server::SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message, std::string command)
 {
     while (!recipients.empty())
@@ -181,7 +191,7 @@ void    Server::SendToRecipients(Client *client, std::vector<std::string> recipi
             Client *target = _nicknames[recipients.back()];
             if (command == "PRIVMSG")
                 sendMessage(client, target, 0, 0, message);
-            else if (command == "NOTICE")
+            else if (command == "NOTICE" && !ContainsSpace(message))
                 sendMessage(client, target, -1, 0, message);
             recipients.pop_back();
         }
@@ -267,6 +277,58 @@ void Server::privMsg(Client *client, std::vector<std::string> tokens)
     findTargetsAndSendMessage(client, recipients, message, tokens[0]);
 }
 
+void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
+{
+    if (!client->isAuthenticated())
+	{
+		sendMessage(NULL, client, ERR_NOLOGIN, 0, client->getNickname() + " :User not logged in");
+		return;
+	}
+    if (tokens.size() < 2)
+    {
+        sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "JOIN :Not enough parameters");
+        return;
+    }
+    std::string target = tokens[1];
+    std::vector<std::string> channels;
+    //separate recoipients
+    if (target.find(',') != std::string::npos)
+    {
+        std::istringstream tokenStream(target);
+        std::string token;
+        while (std::getline(tokenStream, token, ','))
+        {
+            channels.push_back(token);
+        }
+    }
+    else
+    {
+        channels.push_back(target);
+    }
+    while (channels.size())
+    {
+        std::string channelName = channels.back();
+        Channel *channel = _findChannel(channelName);
+        if (!channel)
+        {
+            channel = new Channel(channelName);
+            _channels.push_back(channel);
+            if (channel->isEmpty())
+                channel->setOperator(client);
+        }
+        if (channel->isOnChannel(client))
+        {
+            sendMessage(NULL, client, ERR_USERONCHANNEL, 0, client->getNickname() + " "+ channelName + " :is already on channel");
+            channels.pop_back();
+            continue;
+        }
+        channel->addClient(client);
+        sendMessage(NULL, client, RPL_TOPIC, 0, " " + channelName + " :" + channel->getTopic());
+        sendMessage(NULL, client, RPL_NAMREPLY, 0, " = " + channelName + " :" + channel->getNicknames());
+        sendMessage(NULL, client, RPL_ENDOFNAMES, 0, " " + channelName + " :End of NAMES list");
+        channels.pop_back();
+    }
+}
 
 
 void Server::processCommand(Client *client, std::vector<std::string> tokens)
@@ -292,6 +354,8 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
 		_passCommand(client, tokens);
     else if (command == "PRIVMSG" || command == "privmsg" || command == "NOTICE" || command == "notice") // needs fixes
         privMsg(client, tokens);
+    else if (command == "JOIN" || command == "join")
+        _joinCommand(client, tokens);
 }
 
 std::string Server::normalizeLineEnding(std::string &str)
@@ -305,18 +369,20 @@ std::string Server::normalizeLineEnding(std::string &str)
 void Server::parseCommand(Client *client, std::string &command)
 {
     std::vector<std::string> tokens;
-    std::string token;
     std::string nstring = normalizeLineEnding(command);
-    std::istringstream tokenStream(nstring);
-    //line ending is normalized  from windows style to unix style
-    // and i then look for \n meaning that i have a full command
-    if (nstring.find('\n') != std::string::npos && nstring.size() > 1)
+   char* cstr = new char[nstring.length() + 1];
+    std::strcpy(cstr, nstring.c_str());
+    char* token = std::strtok(cstr, " ");
+    while (token != nullptr) 
     {
-        // i split the command into tokens
-        while (std::getline(tokenStream, token, ' '))
-        {
-            tokens.push_back(token);
-        }
+        tokens.push_back(token);
+        token = std::strtok(nullptr, " ");
+    }
+    
+    delete[] cstr;
+    for (size_t i = 0; i < tokens.size(); ++i)
+    {
+        std::cout << "-" << tokens[i] << "-" << std::endl;
     }
     //process the command
     processCommand(client, tokens);
@@ -394,6 +460,7 @@ void Server::initCode()
 	this->errCodeToStr.insert(std::pair<int, std::string>(ERR_NOPRIVILEGES, "481"));
 	this->errCodeToStr.insert(std::pair<int, std::string>(ERR_CHANOPRIVSNEEDED, "482"));
 	this->errCodeToStr.insert(std::pair<int, std::string>(ERR_USERSDONTMATCH, "502"));
+    this->errCodeToStr.insert(std::pair<int, std::string>(ERR_USERONCHANNEL, "443"));
 	this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_WELCOME, "001"));
 	this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_YOURHOST, "002"));
 	this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_CREATED, "003"));

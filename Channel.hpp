@@ -35,6 +35,7 @@ class Channel
     public:
         Channel();
         Channel(const std::string &name, const std::string &topic, const std::string &mode, int maxUsers);
+        Channel(const std::string &name);
         ~Channel();
         std::string getName() const;
         std::string getTopic() const;
@@ -45,7 +46,12 @@ class Channel
         std::vector<std::string> getBannedUsers() const;
         std::vector<std::string> getOperators() const;
         std::string getChannelName() const;
-
+        bool isOnChannel(Client *client) const;
+        void addClient(Client *client);
+        bool isEmpty() const;
+        void removeClient(Client *client);
+        void setOperator(Client *client);
+        bool isPrivate() const;
 };
 
 #endif

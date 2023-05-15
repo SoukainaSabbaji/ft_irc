@@ -63,6 +63,7 @@ class Server
         void _nickCommand(Client *client, std::vector<std::string> tokens);
 		void _userCommand(Client *client, std::vector<std::string> tokens);
 		void _passCommand(Client *client, std::vector<std::string> tokens);
+        void _joinCommand(Client *client, std::vector<std::string> tokens);
         std::string    readFromClient(int client_fd);
         void _privmsgCommand(Client *client, std::vector<std::string> tokens);
 		void	privMsg(Client *client, std::vector<std::string> tokens);

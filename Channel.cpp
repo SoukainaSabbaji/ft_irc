@@ -1,4 +1,5 @@
 #include "Channel.hpp"
+#include "Client.hpp"
 
 Channel::Channel()
 {
@@ -11,6 +12,61 @@ Channel::Channel(const std::string &name, const std::string &topic, const std::s
     _mode = mode;
     _maxUsers = maxUsers;
     _isPrivate = false;
+}
+
+Channel::Channel(const std::string &name)
+{
+    _name = name;
+    _topic = "";
+    _mode = "";
+    _maxUsers = 0;
+    _isPrivate = false;
+}
+
+bool Channel::isOnChannel(Client *client) const
+{
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i] == client)
+        {
+            return true; 
+        }
+    }
+    return false; 
+}
+
+bool Channel::isEmpty() const
+{
+    if (_clients.size() == 0)
+        return true;
+    return false;
+}
+
+bool Channel::isPrivate() const
+{
+    return _isPrivate;
+}
+
+void Channel::removeClient(Client *client)
+{
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i] == client)
+        {
+            _clients.erase(_clients.begin() + i);
+            return;
+        }
+    }
+}
+
+void Channel::setOperator(Client *client)
+{
+    _operators.push_back(client->getNickname());
+}
+
+void Channel::addClient(Client *client)
+{
+    _clients.push_back(client);
 }
 
 Channel::~Channel()
@@ -41,7 +97,7 @@ std::string Channel::getChannelName() const
 {
     return _name;
 }
-std::vector<Client*> Channel::getClients() const
+std::vector<Client *> Channel::getClients() const
 {
     return _clients;
 }
@@ -60,4 +116,3 @@ Client *Channel::getOwner() const
 {
     return _owner;
 }
-
