@@ -1,5 +1,6 @@
 #include "Channel.hpp"
 #include "Client.hpp"
+#include "Server.hpp"
 
 Channel::Channel()
 {
@@ -59,26 +60,121 @@ void Channel::removeClient(Client *client)
     }
 }
 
+
+void    Channel::SendJoinReplies(Client *client)
+{
+    this->_server->sendMessage(NULL, client, RPL_TOPIC, 0, " " + this->getChannelName() + " :" + this->getTopic());
+    this->_server->sendMessage(NULL, client, RPL_NAMREPLY, 0, " = " + this->getChannelName() + " :" + this->getUsersList());
+    this->_server->sendMessage(NULL, client, RPL_ENDOFNAMES, 0, " " + this->getChannelName() + " :End of NAMES list");
+    this->_server->sendMessage(NULL, client, RPL_MOTDSTART, 0, " :- " + this->getChannelName() + " Message of the day - ");
+    this->_server->sendMessage(NULL, client, RPL_MOTD, 0, " :- " + this->getChannelName() + "  " + this->getTopic());
+    this->_server->sendMessage(NULL, client, RPL_ENDOFMOTD, 0, " :End of MOTD command");
+}
+
+
+void    Channel::AddMember(Client *client, std::string password)
+{
+    //check if channel is invite mode and if client is invited
+    if (this->getMode() == "i" && !this->isInvited(client))
+    {
+        this->_server->sendMessage(NULL, client, ERR_INVITEONLYCHAN, 0, " " + this->getChannelName() + " :Cannot join channel (+i)");
+        return;
+    }
+    if (this->isBanned(client))
+    {
+        this->_server->sendMessage(NULL, client, ERR_BANNEDFROMCHAN, 0, " " + this->getChannelName() + " :Cannot join channel (+b)");
+        return;
+    }
+    if (this->isFull())
+    {
+        this->_server->sendMessage(NULL, client, ERR_CHANNELISFULL, 0, " " + this->getChannelName() + " :Cannot join channel (+l)");
+        return;
+    }
+    if (password != "" && password != this->getKey() && this->getMode() == "k")
+    {
+        this->_server->sendMessage(NULL, client, ERR_BADCHANNELKEY, 0, " " + this->getChannelName() + " :Cannot join channel (+k)");
+        return;
+    }
+    if (this->isOnChannel(client))
+    {
+        this->_server->sendMessage(NULL, client, ERR_USERONCHANNEL, 0, client->getNickname() + " "+ this->getName() + " :is already on channel");
+        return;
+    }
+    else 
+    {
+        _clients.push_back(client);
+        if (this->getMode() == "o" && this->isEmpty())
+        {
+            this->setOperator(client);
+        }
+        this->_server->BroadcastMessage(NULL, client, ":" + client->getNickname() + "!~" + client->getUsername() + "@localhost" +  " JOIN " + this->getChannelName());
+        this->SendJoinReplies(client);
+    }
+}
+std::string  Channel::getKey() const
+{
+    return _key;
+}
+
+bool Channel::isFull() const
+{
+    if (_clients.size() == _maxUsers)
+        return true;
+    return false;
+}
+
 std::string Channel::getUsersList() const
 {
     std::string userList;
     for (size_t i = 0; i < _clients.size(); i++)
     {
-        userList += _clients[i]->getNickname() + " ";
+        std::string name;
+        for (size_t j = 0; j < _operators.size(); j++)
+        {
+            if (_clients[i]->getNickname() == _operators[j])
+            {
+                name = "@" + _clients[i]->getNickname();
+                break;
+            }
+            else
+            {
+                name = _clients[i]->getNickname();
+            }
+        }
+        userList += name + " ";
     }
     return userList;
 }
 
+bool Channel::isInvited(Client *client) const
+{
+    for (size_t i = 0; i < _invitedUsers.size(); i++)
+    {
+        if (_invitedUsers[i] == client->getNickname())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Channel::isBanned(Client *client) const
+{
+    for (size_t i = 0; i < _bannedUsers.size(); i++)
+    {
+        if (_bannedUsers[i] == client->getNickname())
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 void Channel::setOperator(Client *client)
 {
     _operators.push_back(client->getNickname());
 }
 
-void Channel::addClient(Client *client)
-{
-    _clients.push_back(client);
-}
 
 Channel::~Channel()
 {

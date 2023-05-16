@@ -7,6 +7,9 @@
 #define RPL_TOPIC 332
 #define RPL_NAMREPLY 353
 #define RPL_ENDOFNAMES 366
+#define RPL_MOTDSTART 375
+#define RPL_MOTD 372
+#define RPL_ENDOFMOTD 376
 
 // add the rpl codes refer to rfc2812 section 5.1
 #endif

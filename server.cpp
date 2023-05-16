@@ -279,6 +279,9 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
     findTargetsAndSendMessage(client, recipients, message, tokens[0]);
 }
 
+
+
+
 void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
 {
     if (!client->isAuthenticated())
@@ -292,6 +295,7 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
         return;
     }
     std::string target = tokens[1];
+    std::string password = tokens[2];
     std::vector<std::string> channels;
     //separate recoipients
     if (target.find(',') != std::string::npos)
@@ -322,19 +326,8 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
         {
             channel = new Channel(channelName);
             _channels.push_back(channel);
-            if (channel->isEmpty())
-                channel->setOperator(client);
+            channel->AddMember(client, password);
         }
-        if (channel->isOnChannel(client))
-        {
-            sendMessage(NULL, client, ERR_USERONCHANNEL, 0, client->getNickname() + " "+ channelName + " :is already on channel");
-            channels.pop_back();
-            continue;
-        }
-        channel->addClient(client);
-        sendMessage(NULL, client, RPL_TOPIC, 0, " " + channelName + " :" + channel->getTopic());
-        sendMessage(NULL, client, RPL_NAMREPLY, 0, " = " + channelName + " :" + channel->getUsersList());
-        sendMessage(NULL, client, RPL_ENDOFNAMES, 0, " " + channelName + " :End of NAMES list");
         channels.pop_back();
     }
 }

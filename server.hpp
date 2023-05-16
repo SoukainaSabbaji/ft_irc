@@ -12,7 +12,7 @@
 #include <ctime>
 #include <poll.h>
 #include <fcntl.h>
-#include <bits/stdc++.h>
+// #include <bits/stdc++.h>
 #include <map>
 #include <arpa/inet.h>
 #include "Channel.hpp"
@@ -75,6 +75,7 @@ class Server
 		void    findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message, std::string command);
         void    SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message, std::string command);
 		void    SendToRecipient(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel, std::string command);
+        void    AddMember(Client *client, Channel *channel);
         friend class Channel;
         // Exceptions 
         class InvalidSocketFd : public std::exception
