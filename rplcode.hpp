@@ -10,6 +10,9 @@
 #define RPL_MOTDSTART 375
 #define RPL_MOTD 372
 #define RPL_ENDOFMOTD 376
+#define RPL_LISTEND 323
+#define RPL_LISTSTART 321
+#define RPL_LIST 322
 
 // add the rpl codes refer to rfc2812 section 5.1
 #endif

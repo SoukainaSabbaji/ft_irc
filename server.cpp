@@ -316,7 +316,6 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
     while (channels.size())
     {
         std::string channelName = channels.back();
-        //check if the first character is either # or &
         if (channelName[0] != '#' && channelName[0] != '&')
         {
             sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + channelName + " :No such channel");
@@ -326,7 +325,7 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
         Channel *channel = _findChannel(channelName);
         if (!channel)
         {
-            channel = new Channel(channelName);
+            channel = new Channel(channelName, client);
             _channels.push_back(channel);
             channel->_server = this;
         }
@@ -335,6 +334,60 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
     }
 }
 
+void Server::_listCommand(Client *client, std::vector<std::string> tokens)
+{
+    if (!client->isAuthenticated())
+	{
+		sendMessage(NULL, client, ERR_NOLOGIN, 0, client->getNickname() + " :User not logged in");
+		return;
+	}
+    if (tokens.size() < 2)
+    {
+        sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "JOIN :Not enough parameters");
+        return;
+    }
+    std::string target = tokens[1];
+    std::vector<std::string> channels;
+    if (target.find(',') != std::string::npos)
+    {
+        std::istringstream tokenStream(target);
+        std::string token;
+        while (std::getline(tokenStream, token, ','))
+        {
+            channels.push_back(token);
+        }
+    }
+    else
+    {
+        channels.push_back(target);
+    }
+    if (channels.size() == 0)
+    {
+        for (size_t i = 0; i < _channels.size(); i++)
+        {
+            Channel *channel = _channels[i];
+            sendMessage(NULL, client, RPL_LIST, 0, " " + channel->getName() + " " + std::to_string(channel->getMemberCount()) + " :" + channel->getTopic());
+        }
+        sendMessage(NULL, client, RPL_LISTEND, 0, " :End of /LIST");
+    }
+    else
+    {
+        while (channels.size())
+        {
+            std::string channelName = channels.back();
+            Channel *channel = _findChannel(channelName);
+            if (!channel)
+            {
+                sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + channelName + " :No such channel");
+                channels.pop_back();
+                continue;
+            }
+            sendMessage(NULL, client, RPL_LIST, 0, " " + channel->getName() + " " + std::to_string(channel->getMemberCount()) + " :" + channel->getTopic());
+            channels.pop_back();
+        }
+        sendMessage(NULL, client, RPL_LISTEND, 0, " :End of /LIST");
+    }
+}
 
 void Server::processCommand(Client *client, std::vector<std::string> tokens)
 {
@@ -361,6 +414,8 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
         _privMsgCommand(client, tokens);
     else if (command == "JOIN" || command == "join")
         _joinCommand(client, tokens);
+    else if (command == "LIST" || command == "list")
+        _listCommand(client, tokens);
 }
 
 std::string Server::normalizeLineEnding(std::string &str)

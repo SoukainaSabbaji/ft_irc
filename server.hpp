@@ -65,6 +65,7 @@ class Server
 		void _userCommand(Client *client, std::vector<std::string> tokens);
 		void _passCommand(Client *client, std::vector<std::string> tokens);
         void _joinCommand(Client *client, std::vector<std::string> tokens);
+        void _listCommand(Client *client, std::vector<std::string> tokens);
         std::string    readFromClient(int client_fd);
 		void	_privMsgCommand(Client *client, std::vector<std::string> tokens);
         Channel *_findChannel(std::string channelName) const;
@@ -76,6 +77,7 @@ class Server
         void    SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message, std::string command);
 		void    SendToRecipient(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel, std::string command);
         void    AddMember(Client *client, Channel *channel);
+        std::vector<std::string> CheckAndSeparate(Client *client, std::vector<std::string> tokens);
         friend class Channel;
         // Exceptions 
         class InvalidSocketFd : public std::exception

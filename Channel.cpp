@@ -15,13 +15,14 @@ Channel::Channel(const std::string &name, const std::string &topic, const std::s
     _isPrivate = false;
 }
 
-Channel::Channel(const std::string &name)
+Channel::Channel(const std::string &name, Client *owner)
 {
     _name = name;
     _topic = "";
     _mode = "";
     _maxUsers = 100;
     _isPrivate = false;
+    _owner = owner;
 }
 
 bool Channel::isOnChannel(Client *client) const
@@ -63,46 +64,45 @@ void Channel::removeClient(Client *client)
 
 void    Channel::SendJoinReplies(Client *client)
 {
-    this->_server->sendMessage(NULL, client, RPL_TOPIC, 0, " " + this->getChannelName() + " :" + this->getTopic());
+    // this->_server->sendMessage(NULL, client, RPL_TOPIC, 0, " " + this->getChannelName() + " :" + this->getTopic(
     this->_server->sendMessage(NULL, client, RPL_NAMREPLY, 0, " = " + this->getChannelName() + " :" + this->getUsersList());
-    this->_server->sendMessage(NULL, client, RPL_ENDOFNAMES, 0, " " + this->getChannelName() + " :End of NAMES list");
-    this->_server->sendMessage(NULL, client, RPL_MOTDSTART, 0, " :- " + this->getChannelName() + " Message of the day - ");
-    this->_server->sendMessage(NULL, client, RPL_MOTD, 0, " :- " + this->getChannelName() + "  " + this->getTopic());
-    this->_server->sendMessage(NULL, client, RPL_ENDOFMOTD, 0, " :End of MOTD command");
+    this->_server->sendMessage(NULL, client, RPL_ENDOFNAMES, 0, " " + this->getChannelName() + " :End of /NAMES list");
+    // this->_server->sendMessage(NULL, client, RPL_MOTDSTART, 0, " :- " + this->getChannelName() + " Message of the day - ");
+    // this->_server->sendMessage(NULL, client, RPL_MOTD, 0, " :- " + this->getChannelName() + "  " + this->getTopic());
+    // this->_server->sendMessage(NULL, client, RPL_ENDOFMOTD, 0, " :End of MOTD command");
 }
 
+int Channel::getMemberCount() const
+{
+    return (_clients.size());
+}
 
 void    Channel::AddMember(Client *client, std::string password)
 {
     //check if channel is invite mode and if client is invited
     if (this->getMode() == "i" && !this->isInvited(client))
     {
-        std::cout << "Client " << client->getNickname() << " is not invited to channel " << this->getChannelName() << std::endl;
         this->_server->sendMessage(NULL, client, ERR_INVITEONLYCHAN, 0, " " + this->getChannelName() + " :Cannot join channel (+i)");
         return;
     }
     if (this->isBanned(client))
     {
-        std::cout << "Client " << client->getNickname() << " is banned from channel " << this->getChannelName() << std::endl;
         this->_server->sendMessage(NULL, client, ERR_BANNEDFROMCHAN, 0, " " + this->getChannelName() + " :Cannot join channel (+b)");
         return;
     }
     if (this->isFull())
     {
-        std::cout << "Channel " << this->getChannelName() << " is full" << std::endl;
         this->_server->sendMessage(NULL, client, ERR_CHANNELISFULL, 0, " " + this->getChannelName() + " :Cannot join channel (+l)");
         return;
     }
     if (password != "" && password != this->getKey() && this->getMode() == "k")
     {
-        std::cout << "Client " << client->getNickname() << " entered wrong password for channel " << this->getChannelName() << std::endl;
         this->_server->sendMessage(NULL, client, ERR_BADCHANNELKEY, 0, " " + this->getChannelName() + " :Cannot join channel (+k)");
         return;
     }
     if (this->isOnChannel(client))
     {
-        std::cout << "Client " << client->getNickname() << " is already on channel " << this->getChannelName() << std::endl;
-        this->_server->sendMessage(NULL, client, ERR_USERONCHANNEL, 0, client->getNickname() + " "+ this->getName() + " :is already on channel");
+        this->_server->sendMessage(NULL, client, ERR_USERONCHANNEL, 0, " "+ this->getName() + " :is already on channel");
         return;
     }
     else 

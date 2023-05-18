@@ -41,11 +41,12 @@ class Channel
         Server                  *_server;
         Channel();
         Channel(const std::string &name, const std::string &topic, const std::string &mode, int maxUsers);
-        Channel(const std::string &name);
+        Channel(const std::string &name, Client *owner);
         ~Channel();
         std::string getName() const;
         std::string getTopic() const;
         std::string getMode() const;
+        int getMemberCount() const; 
         int getMaxUsers() const;
         Client *getOwner() const;
         std::vector<Client*> getClients() const;
