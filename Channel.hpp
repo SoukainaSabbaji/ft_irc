@@ -13,12 +13,14 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <map>
+#include "Server.hpp"
 #define RED    "\033[31m"
 #define GREEN  "\033[32m"
 #define YELLOW "\033[33m"
 #define RESET  "\033[0m"
 
 class Client;
+class Server;
 
 class Channel
 {
@@ -29,7 +31,6 @@ class Channel
         std::string             _key;
         int                     _maxUsers;
         bool                    _isPrivate;
-        Server                  *_server;
         Client                  *_owner;
         std::vector<Client*>     _clients;
         std::vector<std::string> _bannedUsers;
@@ -37,6 +38,7 @@ class Channel
         std::vector<std::string> _invitedUsers;
         
     public:
+        Server                  *_server;
         Channel();
         Channel(const std::string &name, const std::string &topic, const std::string &mode, int maxUsers);
         Channel(const std::string &name);
@@ -62,6 +64,7 @@ class Channel
         bool isBanned(Client *client) const;
         void AddMember(Client *client, std::string password);
         void SendJoinReplies(Client *client);
+        Channel &operator=(const Channel &channel);
 
 };
 

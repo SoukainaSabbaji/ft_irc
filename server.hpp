@@ -26,6 +26,7 @@
 #define BUFFER_SIZE 1024
 
 class Client;
+class Channel;
 class Server
 {
     private:
@@ -65,7 +66,6 @@ class Server
 		void _passCommand(Client *client, std::vector<std::string> tokens);
         void _joinCommand(Client *client, std::vector<std::string> tokens);
         std::string    readFromClient(int client_fd);
-        void __privMsgCommandCommand(Client *client, std::vector<std::string> tokens);
 		void	_privMsgCommand(Client *client, std::vector<std::string> tokens);
         Channel *_findChannel(std::string channelName) const;
 		char	*getAddr(Client *clt);

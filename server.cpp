@@ -89,11 +89,13 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
 	if (!src && RPLCODE)
 		message = ":" + _host + " " + this->rplCodeToStr[RPLCODE] + " " + dst->getNickname() + " :" + message + "\r\n";
 	else if (!src && ERRCODE == 0)
-		message = ":" + this->_serverName + "!" + this->_serverName +"@"+_host +" _privMsgCommand " + dst->getNickname() + " :"+ message +"\r\n";
+    {
+        message = ":" + this->_serverName + "!" + this->_serverName +"@"+_host +" PRIVMSG " + dst->getNickname() + " :"+ message +"\r\n";
+    }
 	else if (ERRCODE < 0)
         message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" NOTICE " + dst->getNickname() + " "+ message +"\r\n"; 
     else if (!ERRCODE && !RPLCODE)
-		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" _privMsgCommand " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
+		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
 	else
 		message = ":" + this->_serverName + " " + this->errCodeToStr[ERRCODE] + " " + (dst->getNickname().empty() ? "*" : dst->getNickname()) + message + "\r\n"; // still not working
 
@@ -181,7 +183,7 @@ void    Server::SendToRecipients(Client *client, std::vector<std::string> recipi
 {
     while (!recipients.empty())
     {
-        if (nickAvailable(recipients.back()) && command == "_privMsgCommand")
+        if (nickAvailable(recipients.back()) && command == "PRIVMSG")
         {
             sendMessage(NULL, client, ERR_NOSUCHNICK, 0, " " + recipients.back() + " :No such nick/channel");
             return;
@@ -189,7 +191,7 @@ void    Server::SendToRecipients(Client *client, std::vector<std::string> recipi
         else 
         {
             Client *target = _nicknames[recipients.back()];
-            if (command == "_privMsgCommand")
+            if (command == "PRIVMSG")
                 sendMessage(client, target, 0, 0, message);
             else if (command == "NOTICE" && !ContainsSpace(message))
                 sendMessage(client, target, -1, 0, message);
@@ -208,7 +210,7 @@ void    Server::SendToRecipient(Client *client, std::vector<std::string> recipie
         else
         {
             //only display error message if the command is PRIVMSG
-            if (command == "_privMsgCommand")
+            if (command == "PRIVMSG")
             {
                 sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + recipients[0] + " :No such channel");
                 return;
@@ -326,8 +328,9 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
         {
             channel = new Channel(channelName);
             _channels.push_back(channel);
-            channel->AddMember(client, password);
+            channel->_server = this;
         }
+        channel->AddMember(client, password);
         channels.pop_back();
     }
 }
@@ -354,7 +357,7 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
 		_userCommand(client, tokens);
 	else if (command == "PASS" || command == "pass")
 		_passCommand(client, tokens);
-    else if (command == "_privMsgCommand" || command == "_privMsgCommand" || command == "NOTICE" || command == "notice") // needs fixes
+    else if (command == "PRIVMSG" || command == "privmsg" || command == "NOTICE" || command == "notice") // needs fixes
         _privMsgCommand(client, tokens);
     else if (command == "JOIN" || command == "join")
         _joinCommand(client, tokens);
@@ -463,6 +466,7 @@ void Server::initCode()
 	this->errCodeToStr.insert(std::pair<int, std::string>(ERR_CHANOPRIVSNEEDED, "482"));
 	this->errCodeToStr.insert(std::pair<int, std::string>(ERR_USERSDONTMATCH, "502"));
     this->errCodeToStr.insert(std::pair<int, std::string>(ERR_USERONCHANNEL, "443"));
+    this->errCodeToStr.insert(std::pair<int, std::string>(ERR_INVITEONLYCHAN, "473"));
 	this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_WELCOME, "001"));
 	this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_YOURHOST, "002"));
 	this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_CREATED, "003"));
@@ -470,6 +474,9 @@ void Server::initCode()
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_TOPIC, "332"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_NAMREPLY, "353"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_ENDOFNAMES, "366"));
+    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_MOTDSTART, "375"));
+    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_MOTD, "372"));
+    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_ENDOFMOTD, "376"));
 }
 
 void Server::InitSocket()
@@ -533,7 +540,6 @@ std::string	Server::getDate(void)
 
 Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _running(true), _password(password)
 {
-
 	this->_serverName = "soukixie"; //9 characters and a merge between our names ^_^
 	this->creationDate =  this->getDate();
 	this->_nicknames.insert(std::pair<std::string, Client*>(this->_serverName, new Client));
@@ -627,6 +633,6 @@ bool Server::isRunning() const
 //:server_name ERROR error_code target :error_message
 
 //_privMsgCommand format
-//:sender_nick!sender_user@sender_host _privMsgCommand target :message_text
+//:sender_nick!sender_user@sender_host PRIVMSG target :message_text
 
 //send an error when no text is sent through notice , no user not found error
