@@ -65,6 +65,8 @@ class Channel
         bool isBanned(Client *client) const;
         void AddMember(Client *client, std::string password);
         void SendJoinReplies(Client *client);
+        void BroadcastJoinMessage(Client *client);
+        void CheckJoinErrors(Client *client, std::string password);
         Channel &operator=(const Channel &channel);
 
 };

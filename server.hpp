@@ -23,6 +23,9 @@
 #define YELLOW "\033[33m"
 #define RESET  "\033[0m"
 
+#define BROADCAST 0
+#define UNICAST 1
+
 #define BUFFER_SIZE 1024
 
 class Client;
@@ -66,8 +69,11 @@ class Server
 		void _passCommand(Client *client, std::vector<std::string> tokens);
         void _joinCommand(Client *client, std::vector<std::string> tokens);
         void _listCommand(Client *client, std::vector<std::string> tokens);
-        std::string    readFromClient(int client_fd);
 		void	_privMsgCommand(Client *client, std::vector<std::string> tokens);
+        std::vector<std::string> SplitTargets(std::vector<std::string> tokens);
+        std::string    readFromClient(int client_fd);
+        void    CheckAuthentication(Client *client);
+        bool    nickAvailable(std::string nickname) const;
         Channel *_findChannel(std::string channelName) const;
 		char	*getAddr(Client *clt);
 		void	checkAndAuth(Client *clt);

@@ -64,10 +64,12 @@ void Channel::removeClient(Client *client)
 
 void    Channel::SendJoinReplies(Client *client)
 {
-    // this->_server->sendMessage(NULL, client, RPL_TOPIC, 0, " " + this->getChannelName() + " :" + this->getTopic(
-    this->_server->sendMessage(NULL, client, RPL_NAMREPLY, 0, " = " + this->getChannelName() + " :" + this->getUsersList());
-    this->_server->sendMessage(NULL, client, RPL_ENDOFNAMES, 0, " " + this->getChannelName() + " :End of /NAMES list");
+    this->_server->sendMessage(NULL, client, 0, RPL_NAMREPLY, " = " + this->getChannelName() + " :" + this->getUsersList());
+    this->_server->sendMessage(NULL, client, 0, RPL_ENDOFNAMES, " " + this->getChannelName() + " :End of /NAMES list");
+    if (this->getTopic() != "")
+        this->_server->sendMessage(NULL, client, 0, RPL_TOPIC, " " + this->getChannelName() + " TOPIC :" + this->getTopic());
     // this->_server->sendMessage(NULL, client, RPL_MOTDSTART, 0, " :- " + this->getChannelName() + " Message of the day - ");
+    // this->_server->sendMessage(NULL, client, RPL_TOPIC, 0, " " + this->getChannelName() + " :" + this->getTopic(
     // this->_server->sendMessage(NULL, client, RPL_MOTD, 0, " :- " + this->getChannelName() + "  " + this->getTopic());
     // this->_server->sendMessage(NULL, client, RPL_ENDOFMOTD, 0, " :End of MOTD command");
 }
@@ -77,9 +79,8 @@ int Channel::getMemberCount() const
     return (_clients.size());
 }
 
-void    Channel::AddMember(Client *client, std::string password)
+void Channel::CheckJoinErrors(Client *client, std::string password)
 {
-    //check if channel is invite mode and if client is invited
     if (this->getMode() == "i" && !this->isInvited(client))
     {
         this->_server->sendMessage(NULL, client, ERR_INVITEONLYCHAN, 0, " " + this->getChannelName() + " :Cannot join channel (+i)");
@@ -100,6 +101,12 @@ void    Channel::AddMember(Client *client, std::string password)
         this->_server->sendMessage(NULL, client, ERR_BADCHANNELKEY, 0, " " + this->getChannelName() + " :Cannot join channel (+k)");
         return;
     }
+}
+
+void    Channel::AddMember(Client *client, std::string password)
+{
+    //check if channel is invite mode and if client is invited
+    CheckJoinErrors(client, password);
     if (this->isOnChannel(client))
     {
         this->_server->sendMessage(NULL, client, ERR_USERONCHANNEL, 0, " "+ this->getName() + " :is already on channel");
@@ -108,15 +115,28 @@ void    Channel::AddMember(Client *client, std::string password)
     else 
     {
         _clients.push_back(client);
-        if (this->getMode() == "o" && this->isEmpty())
+        //print clients on channel
+        if (this->isEmpty())
         {
             this->setOperator(client);
+            this->_owner = client;
         }
-        std::string BroadcastMessage = ":" + client->getNickname() + "!~" + client->getUsername() + "@localhost" +  " JOIN " + this->getChannelName();
-        this->_server->BroadcastMessage(NULL, this, BroadcastMessage);
+        BroadcastJoinMessage(client);
         this->SendJoinReplies(client);
     }
 }
+
+void    Channel::BroadcastJoinMessage(Client *client)
+{
+    std::string BroadcastMessage = ":" + client->getNickname() + "!~" + client->getUsername() + "@localhost" +  " JOIN:" + this->getChannelName() + "\r\n";
+    std::vector<Client *> clients = this->getClients();
+    for (size_t i = 0; i < clients.size(); i++)
+    {
+        Client *dst = clients[i];
+        send(dst->getFd(), BroadcastMessage.c_str(), BroadcastMessage.length(), 0);
+    }
+}
+
 std::string  Channel::getKey() const
 {
     return _key;
@@ -136,18 +156,10 @@ std::string Channel::getUsersList() const
     for (size_t i = 0; i < _clients.size(); i++)
     {
         std::string name;
-        for (size_t j = 0; j < _operators.size(); j++)
-        {
-            if (_clients[i]->getNickname() == _operators[j])
-            {
-                name = "@" + _clients[i]->getNickname();
-                break;
-            }
-            else
-            {
-                name = _clients[i]->getNickname();
-            }
-        }
+        if (_clients[i] == this->_owner)
+            name = "@" + _clients[i]->getNickname();
+        else
+            name = _clients[i]->getNickname();
         userList += name + " ";
     }
     return userList;

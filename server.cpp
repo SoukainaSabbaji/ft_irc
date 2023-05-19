@@ -55,7 +55,6 @@ void	Server::checkAndAuth(Client *clt)
 
 /// @brief returns the ip of the client if NULL is passed returns the server domain
 /// @param clt the client
-
 char *Server::getAddr(Client *clt)
 {
 	struct sockaddr_in _host;
@@ -89,17 +88,13 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
 	if (!src && RPLCODE)
 		message = ":" + _host + " " + this->rplCodeToStr[RPLCODE] + " " + dst->getNickname() + " :" + message + "\r\n";
 	else if (!src && ERRCODE == 0)
-    {
         message = ":" + this->_serverName + "!" + this->_serverName +"@"+_host +" PRIVMSG " + dst->getNickname() + " :"+ message +"\r\n";
-    }
 	else if (ERRCODE < 0)
         message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" NOTICE " + dst->getNickname() + " "+ message +"\r\n"; 
     else if (!ERRCODE && !RPLCODE)
-		message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
+		 message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
 	else
 		message = ":" + this->_serverName + " " + this->errCodeToStr[ERRCODE] + " " + (dst->getNickname().empty() ? "*" : dst->getNickname()) + message + "\r\n"; // still not working
-
-    // send(dst->getFd(), "welcome t", message.length(), 0);
 	send(dst->getFd(), message.c_str(), message.length(), 0);
 }
 
@@ -179,6 +174,7 @@ bool    ContainsSpace(std::string str)
     }
     return (false);
 }
+
 void    Server::SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message, std::string command)
 {
     while (!recipients.empty())
@@ -237,17 +233,32 @@ void    Server::findTargetsAndSendMessage(Client *client, std::vector<std::strin
     }
 
 }
+
+bool    Server::nickAvailable(std::string nickname) const
+{
+    if (_nicknames.find(nickname) == _nicknames.end())
+        return (true);
+    return (false);
+}
+
+void    Server::CheckAuthentication(Client *client)
+{
+    if (client->isAuthenticated())
+        return;
+    else  
+	{
+		sendMessage(NULL, client, ERR_NOLOGIN, 0, client->getNickname() + " :User not logged in");
+		return;
+	}
+}
+
 /// @brief /PRIVMSG command
 /// @param client  client that sent the command
 /// @param tokens  command and parameters
 void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
 {
     //check number of parameters
-    if (!client->isAuthenticated())
-	{
-		sendMessage(NULL, client, ERR_NOLOGIN, 0, client->getNickname() + " :User not logged in");
-		return;
-	}
+    CheckAuthentication(client);
     if (tokens.size() < 2)
     {
         sendMessage(NULL, client, ERR_NORECIPIENT, 0, " :No recipient given " + tokens[0]);
@@ -259,8 +270,18 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
 		return;
 	}
     //fetch target and message
-    std::string target = tokens[1];
+    std::vector<std::string> recipients = SplitTargets(tokens);
+    std::string message = "";
+	for (size_t i = 2; i < tokens.size(); ++i)
+		message += tokens[i] + " ";
+    findTargetsAndSendMessage(client, recipients, message, tokens[0]);
+}
+
+
+std::vector<std::string> Server::SplitTargets(std::vector<std::string> tokens)
+{
     std::vector<std::string> recipients;
+    std::string target = tokens[1];
     //separate recoipients
     if (target.find(',') != std::string::npos)
     {
@@ -275,44 +296,19 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
     {
         recipients.push_back(target);
     }
-    std::string message = "";
-	for (size_t i = 2; i < tokens.size(); ++i)
-		message += tokens[i] + " ";
-    findTargetsAndSendMessage(client, recipients, message, tokens[0]);
+    return (recipients);
 }
-
-
-
 
 void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
 {
-    if (!client->isAuthenticated())
-	{
-		sendMessage(NULL, client, ERR_NOLOGIN, 0, client->getNickname() + " :User not logged in");
-		return;
-	}
+    CheckAuthentication(client);
     if (tokens.size() < 2)
     {
         sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "JOIN :Not enough parameters");
         return;
     }
-    std::string target = tokens[1];
     std::string password = tokens[2];
-    std::vector<std::string> channels;
-    //separate recoipients
-    if (target.find(',') != std::string::npos)
-    {
-        std::istringstream tokenStream(target);
-        std::string token;
-        while (std::getline(tokenStream, token, ','))
-        {
-            channels.push_back(token);
-        }
-    }
-    else
-    {
-        channels.push_back(target);
-    }
+    std::vector<std::string> channels = SplitTargets(tokens);
     while (channels.size())
     {
         std::string channelName = channels.back();
@@ -336,31 +332,13 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
 
 void Server::_listCommand(Client *client, std::vector<std::string> tokens)
 {
-    if (!client->isAuthenticated())
-	{
-		sendMessage(NULL, client, ERR_NOLOGIN, 0, client->getNickname() + " :User not logged in");
-		return;
-	}
+    CheckAuthentication(client);
     if (tokens.size() < 2)
     {
-        sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "JOIN :Not enough parameters");
+        sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "LIST :Not enough parameters");
         return;
     }
-    std::string target = tokens[1];
-    std::vector<std::string> channels;
-    if (target.find(',') != std::string::npos)
-    {
-        std::istringstream tokenStream(target);
-        std::string token;
-        while (std::getline(tokenStream, token, ','))
-        {
-            channels.push_back(token);
-        }
-    }
-    else
-    {
-        channels.push_back(target);
-    }
+    std::vector<std::string> channels = SplitTargets(tokens);
     if (channels.size() == 0)
     {
         for (size_t i = 0; i < _channels.size(); i++)
@@ -448,29 +426,16 @@ void Server::parseCommand(Client *client, std::string &command)
     processCommand(client, tokens);
 }
 
-// void Server::handleClient(Client *client)
-// {
-//     std::cout << "Handling client " << client->getFd() << std::endl;
-//     std::string message = readFromClient(client->getFd());
-//     if (message.empty())
-//         return;
-//     parseCommand(client, message);
-// }
-
 std::string Server::readFromClient(int client_fd)
 {
     char buffer[1024];
     std::memset(buffer, 0, sizeof(buffer));
 
-    // std::cout << "Reading from client " << client_fd << std::endl;
     int len = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 	std::string message = buffer;
     if (len > 0)
-    {
         std::cout << message;
-        
-    }
-    else if (len == 0)
+    if (len == 0)
     {
         std::cout << "Client :" << client_fd << " disconnected" << std::endl;
         close(client_fd);
