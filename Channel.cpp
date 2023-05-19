@@ -64,8 +64,12 @@ void Channel::removeClient(Client *client)
 
 void    Channel::SendJoinReplies(Client *client)
 {
-    this->_server->sendMessage(NULL, client, 0, RPL_NAMREPLY, " = " + this->getChannelName() + " :" + this->getUsersList());
-    this->_server->sendMessage(NULL, client, 0, RPL_ENDOFNAMES, " " + this->getChannelName() + " :End of /NAMES list");
+    // this->_server->sendMessage(NULL, client, 0, RPL_NAMREPLY, " = " + this->getChannelName() + " :" + this->getUsersList());
+    // this->_server->sendMessage(NULL, client, 0, RPL_ENDOFNAMES, " " + this->getChannelName() + " :End of /NAMES list");
+    std::string NamesReply = ":irc.soukixie.local 353 " + client->getNickname() + " = " + this->getChannelName() + " :" + this->getUsersList() + "\r\n";
+    send(client->getFd(), NamesReply.c_str(), NamesReply.length(), 0);
+    std::string EndOfNamesReply = ":irc.soukixie.local 366 " + client->getNickname() + " " + this->getChannelName() + " :End of /NAMES list" + "\r\n";
+    send(client->getFd(), EndOfNamesReply.c_str(), EndOfNamesReply.length(), 0);
     if (this->getTopic() != "")
         this->_server->sendMessage(NULL, client, 0, RPL_TOPIC, " " + this->getChannelName() + " TOPIC :" + this->getTopic());
     // this->_server->sendMessage(NULL, client, RPL_MOTDSTART, 0, " :- " + this->getChannelName() + " Message of the day - ");
@@ -73,6 +77,14 @@ void    Channel::SendJoinReplies(Client *client)
     // this->_server->sendMessage(NULL, client, RPL_MOTD, 0, " :- " + this->getChannelName() + "  " + this->getTopic());
     // this->_server->sendMessage(NULL, client, RPL_ENDOFMOTD, 0, " :End of MOTD command");
 }
+
+// :acm1!~acm1@5c8c-aff4-7127-3c3-1c20.230.197.ip JOIN :#testacm
+// :punch.wa.us.dal.net 353 acm1 = #testacm :@acm1
+// :punch.wa.us.dal.net 366 acm1 #testacm :End of /NAMES list.
+
+// :sou!~*@localhost JOIN :#test
+// :irc.soukixie.local 353 sou = #test :@sou 
+// :irc.soukixie.local 366 sou #test :End of /NAMES list
 
 int Channel::getMemberCount() const
 {
@@ -128,7 +140,7 @@ void    Channel::AddMember(Client *client, std::string password)
 
 void    Channel::BroadcastJoinMessage(Client *client)
 {
-    std::string BroadcastMessage = ":" + client->getNickname() + "!~" + client->getUsername() + "@localhost" +  " JOIN:" + this->getChannelName() + "\r\n";
+    std::string BroadcastMessage = ":" + client->getNickname() + "!~" + client->getUsername() + "@localhost" +  " JOIN :" + this->getChannelName() + "\r\n";
     std::vector<Client *> clients = this->getClients();
     for (size_t i = 0; i < clients.size(); i++)
     {
