@@ -161,7 +161,8 @@ void    Server::BroadcastMessage(Client *client, Channel *target, const std::str
     for (size_t i = 0; i < clients.size(); i++)
     {
         Client *clientTarg = clients[i];
-        sendMessage(client, clientTarg,0 , 0, message);
+        if (clientTarg != client)
+            sendMessage(client, clientTarg,0 , 0, message);
     }
 }
 
