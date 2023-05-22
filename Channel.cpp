@@ -78,13 +78,6 @@ void    Channel::SendJoinReplies(Client *client)
     // this->_server->sendMessage(NULL, client, RPL_ENDOFMOTD, 0, " :End of MOTD command");
 }
 
-// :acm1!~acm1@5c8c-aff4-7127-3c3-1c20.230.197.ip JOIN :#testacm
-// :punch.wa.us.dal.net 353 acm1 = #testacm :@acm1
-// :punch.wa.us.dal.net 366 acm1 #testacm :End of /NAMES list.
-
-// :sou!~*@localhost JOIN :#test
-// :irc.soukixie.local 353 sou = #test :@sou 
-// :irc.soukixie.local 366 sou #test :End of /NAMES list
 
 int Channel::getMemberCount() const
 {
