@@ -69,7 +69,8 @@ class Server
 		void _passCommand(Client *client, std::vector<std::string> tokens);
         void _joinCommand(Client *client, std::vector<std::string> tokens);
         void _listCommand(Client *client, std::vector<std::string> tokens);
-		void	_privMsgCommand(Client *client, std::vector<std::string> tokens);
+		void _privMsgCommand(Client *client, std::vector<std::string> tokens);
+        void _kickCommand(Client *client, std::vector<std::string> tokens);
         std::vector<std::string> SplitTargets(std::vector<std::string> tokens);
         std::string    readFromClient(int client_fd);
         void    CheckAuthentication(Client *client);

@@ -180,7 +180,7 @@ void    Server::SendToRecipients(Client *client, std::vector<std::string> recipi
 {
     while (!recipients.empty())
     {
-        if (nickAvailable(recipients.back()) && command == "PRIVMSG")
+        if (nickAvailable(recipients.back()) && command == "privmsg")
         {
             sendMessage(NULL, client, ERR_NOSUCHNICK, 0, " " + recipients.back() + " :No such nick/channel");
             return;
@@ -188,9 +188,9 @@ void    Server::SendToRecipients(Client *client, std::vector<std::string> recipi
         else 
         {
             Client *target = _nicknames[recipients.back()];
-            if (command == "PRIVMSG")
+            if (command == "privmsg")
                 sendMessage(client, target, 0, 0, message);
-            else if (command == "NOTICE" && !ContainsSpace(message))
+            else if (command == "notice" && !ContainsSpace(message))
                 sendMessage(client, target, -1, 0, message);
             recipients.pop_back();
         }
@@ -207,7 +207,7 @@ void    Server::SendToRecipient(Client *client, std::vector<std::string> recipie
         else
         {
             //only display error message if the command is PRIVMSG
-            if (command == "PRIVMSG")
+            if (command == "privmsg")
             {
                 sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + recipients[0] + " :No such channel");
                 return;
@@ -272,6 +272,9 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
 	}
     //fetch target and message
     std::vector<std::string> recipients = SplitTargets(tokens);
+    //print recipients
+    for (size_t i = 0; i < recipients.size(); i++)
+        std::cout << "recipients: " << "-" << recipients[i] << "-" << std::endl;
     std::string message = "";
 	for (size_t i = 2; i < tokens.size(); ++i)
 		message += tokens[i] + " ";
@@ -368,6 +371,25 @@ void Server::_listCommand(Client *client, std::vector<std::string> tokens)
     }
 }
 
+void Server::_kickCommand(Client *client, std::vector<std::string> tokens)
+{
+    CheckAuthentication(client);
+    if (tokens.size() < 3)
+    {
+        sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "KICK :Not enough parameters");
+        return;
+    }
+    //split channels and targets to kick
+}
+
+void    toLower(std::string &str)
+{
+    for (size_t i = 0; i < str.size(); i++)
+    {
+        str[i] = std::tolower(str[i]);
+    }
+}
+
 void Server::processCommand(Client *client, std::vector<std::string> tokens)
 {
     //remove \n from last token if it exists
@@ -375,26 +397,28 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
     {
         std::string& lastMessage = tokens.back();
         if (!lastMessage.empty() && lastMessage.back() == '\n')
-        {
             lastMessage.pop_back();
-        }
     }
     // std::cout << "--" << tokens[0] << "--" << std::endl;
     if (tokens.empty())
         return;
-    const std::string &command = tokens[0];
-    if (command == "NICK" || command == "nick")
+    std::string &command = tokens[0];
+    //make the command lowercase
+    toLower(command);
+    if (command == "nick")
         _nickCommand(client, tokens);
-	else if (command == "USER" || command == "user")
+	else if (command == "user")
 		_userCommand(client, tokens);
-	else if (command == "PASS" || command == "pass")
+	else if (command == "pass")
 		_passCommand(client, tokens);
-    else if (command == "PRIVMSG" || command == "privmsg" || command == "NOTICE" || command == "notice") // needs fixes
+    else if (command == "privmsg" || command == "notice") // needs fixes
         _privMsgCommand(client, tokens);
-    else if (command == "JOIN" || command == "join")
+    else if (command == "join")
         _joinCommand(client, tokens);
-    else if (command == "LIST" || command == "list")
+    else if (command == "list")
         _listCommand(client, tokens);
+    else if (command == "kick")
+        _kickCommand(client, tokens);
 }
 
 std::string Server::normalizeLineEnding(std::string &str)
