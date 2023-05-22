@@ -45,7 +45,7 @@ class Server
 		std::map<std::string, Client*> _nicknames;
 		std::map<int, std::string> errCodeToStr;
 		std::map<int, std::string> rplCodeToStr;
-        void	parseCommand(Client *client, std::string &command);
+        void	parseCommand(Client *client);
         void	processCommand(Client *client, std::vector<std::string> tokens);
         void	handleClient(Client *client);
 		bool	nickAvailable(std::string nick);
@@ -59,7 +59,7 @@ class Server
         std::string getPassword() const;
         bool isRunning() const;
         void    InitSocket();
-        bool    readFromClient(Client *client);
+        std::string readFromClient(Client *client);
         void    writeToClient();
         void    removeClient(int client_fd);
         std::string normalizeLineEnding(std::string &str);
@@ -71,19 +71,22 @@ class Server
         void _listCommand(Client *client, std::vector<std::string> tokens);
 		void _privMsgCommand(Client *client, std::vector<std::string> tokens);
         void _kickCommand(Client *client, std::vector<std::string> tokens);
-        std::vector<std::string> SplitTargets(std::vector<std::string> tokens);
-        std::string    readFromClient(int client_fd);
+        void _partCommand(Client *client, std::vector<std::string> tokens);
+        std::vector<std::string> SplitTargets(std::string tokens);
+        // std::string    readFromClient(int client_fd);
         void    CheckAuthentication(Client *client);
         bool    nickAvailable(std::string nickname) const;
         Channel *_findChannel(std::string channelName) const;
 		char	*getAddr(Client *clt);
 		void	checkAndAuth(Client *clt);
 		void	initCode();
+        void    DeleteEmptyChan(Channel *channel,std::vector<Channel*>    _channels);
         void    BroadcastMessage(Client *client, Channel *target,const std::string &message);
 		void    findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message, std::string command);
         void    SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message, std::string command);
 		void    SendToRecipient(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel, std::string command);
         void    AddMember(Client *client, Channel *channel);
+        Client *FindClientInChannel(std::string target, Channel *channel);
         std::vector<std::string> CheckAndSeparate(Client *client, std::vector<std::string> tokens);
         friend class Channel;
         // Exceptions 

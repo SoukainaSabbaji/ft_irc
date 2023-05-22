@@ -30,6 +30,7 @@ class Client
         int             _fd;  // client socket fd
 		bool			_isConnected;
 		bool			_isAuthenticated;
+        std::string     _buffer;
         friend class Server;
     public:
         Client();

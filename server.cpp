@@ -271,7 +271,7 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
 		return;
 	}
     //fetch target and message
-    std::vector<std::string> recipients = SplitTargets(tokens);
+    std::vector<std::string> recipients = SplitTargets(tokens[1]);
     //print recipients
     for (size_t i = 0; i < recipients.size(); i++)
         std::cout << "recipients: " << "-" << recipients[i] << "-" << std::endl;
@@ -282,10 +282,10 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
 }
 
 
-std::vector<std::string> Server::SplitTargets(std::vector<std::string> tokens)
+std::vector<std::string> Server::SplitTargets(std::string token)
 {
     std::vector<std::string> recipients;
-    std::string target = tokens[1];
+    std::string target = token;
     //separate recoipients
     if (target.find(',') != std::string::npos)
     {
@@ -312,7 +312,7 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
         return;
     }
     std::string password = tokens[2];
-    std::vector<std::string> channels = SplitTargets(tokens);
+    std::vector<std::string> channels = SplitTargets(tokens[1]);
     while (channels.size())
     {
         std::string channelName = channels.back();
@@ -342,7 +342,7 @@ void Server::_listCommand(Client *client, std::vector<std::string> tokens)
         sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "LIST :Not enough parameters");
         return;
     }
-    std::vector<std::string> channels = SplitTargets(tokens);
+    std::vector<std::string> channels = SplitTargets(tokens[1]);
     if (channels.size() == 0)
     {
         for (size_t i = 0; i < _channels.size(); i++)
@@ -371,6 +371,68 @@ void Server::_listCommand(Client *client, std::vector<std::string> tokens)
     }
 }
 
+void    Server::DeleteEmptyChan(Channel *channel,std::vector<Channel*> _channels)
+{
+    //check if the channel is empty , if so delete it
+    if (channel->getMemberCount() == 0)
+    {
+        std::vector<Channel*>::iterator it = std::find(_channels.begin(), _channels.end(), channel);
+        _channels.erase(it);
+        delete channel;
+    }
+}
+
+void Server::_partCommand(Client *client, std::vector<std::string> tokens)
+{
+    CheckAuthentication(client);
+    std::cout << tokens.size() << std::endl;
+    std::cout << "--" <<tokens[0] << "--" << std::endl;
+    std::cout << "--" <<tokens[1] << "--" << std::endl; 
+    if (tokens.size() < 2)
+    {
+        sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "PART :Not enough parameters");
+        return;
+    }
+    std::vector<std::string> channels = SplitTargets(tokens[1]);
+    std::string reason = tokens[2];
+    while (channels.size())
+    {
+        std::string channelName = channels.back();
+        Channel *channel = _findChannel(channelName);
+        if (!channel)
+        {
+            sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + channelName + " :No such channel");
+            channels.pop_back();
+            continue;
+        }
+        if (!channel->CheckMember(client))
+        {
+            sendMessage(NULL, client, ERR_NOTONCHANNEL, 0, " " + channelName + " :You're not on that channel");
+            channels.pop_back();
+        }
+        else
+        {
+            channel->removeClient(client);
+            //:<nickname>!~<username>@<hostname> PART #channel :<reason>
+            std::string message = ":" + client->getNickname() + "!~" + client->getUsername() + "@localhost"  + " PART " + channelName + " :" + reason;
+            channel->TheBootlegBroadcast(message);
+            DeleteEmptyChan(channel,_channels);
+        }
+        channels.pop_back();
+    }
+}
+
+Client *Server::FindClientInChannel(std::string target, Channel *channel)
+{
+    std::vector<Client*>::const_iterator i;
+    for(i = channel->getClients().cbegin(); i != channel->getClients().cend(); i++)
+    {
+        if ((*i)->getNickname() == target)
+            return (*i);
+    }
+    return (NULL);
+}
+
 void Server::_kickCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
@@ -380,6 +442,44 @@ void Server::_kickCommand(Client *client, std::vector<std::string> tokens)
         return;
     }
     //split channels and targets to kick
+    std::vector<std::string> channels = SplitTargets(tokens[1]);
+    std::vector<std::string> targets = SplitTargets(tokens[2]);
+    std::string reason = tokens[3];
+    //check if the client requesting the kick is an operator in the channel
+    while (channels.size())
+    {
+        std::string channelName = channels.back();
+        Channel *channel = _findChannel(channelName);
+        if (!channel)
+        {
+            sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + channelName + " :No such channel");
+            channels.pop_back();
+            continue;
+        }
+        if (!channel->CheckOperator(client))
+        {
+            sendMessage(NULL, client, ERR_CHANOPRIVSNEEDED, 0, " " + channelName + " :You're not channel operator");
+            channels.pop_back();
+            continue;
+        }
+        else
+        {
+            while (targets.size())
+            {
+                std::string target = targets.back();
+                Client *targetClient = FindClientInChannel(target, channel);
+                if (!targetClient)
+                {
+                    sendMessage(NULL, client, ERR_NOSUCHNICK, 0, " " + target + " :No such nick/channel");
+                    targets.pop_back();
+                    continue;
+                }
+                channel->removeClient(targetClient);
+                targets.pop_back();
+            }
+        }
+        channels.pop_back();
+    }
 }
 
 void    toLower(std::string &str)
@@ -419,6 +519,8 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
         _listCommand(client, tokens);
     else if (command == "kick")
         _kickCommand(client, tokens);
+    else if (command == "part")
+        _partCommand(client, tokens);
 }
 
 std::string Server::normalizeLineEnding(std::string &str)
@@ -429,53 +531,85 @@ std::string Server::normalizeLineEnding(std::string &str)
 }
 
 // parsing a single command from a client
-void Server::parseCommand(Client *client, std::string &command)
+void Server::parseCommand(Client *client)
 {
     std::vector<std::string> tokens;
-    std::string nstring = normalizeLineEnding(command);
-   char* cstr = new char[nstring.length() + 1];
-    std::strcpy(cstr, nstring.c_str());
-    char* token = std::strtok(cstr, " ");
-    while (token != nullptr) 
+    std::string command = client->_buffer;
+    std::string tmp = "";
+
+    size_t i = 0;
+    size_t len = command.length();
+    while (i < len)
     {
-        tokens.push_back(token);
-        token = std::strtok(nullptr, " ");
+        if (command[i] == ' ')
+        {
+            if (!tmp.empty() && tmp[0] != '\n')
+                tokens.push_back(std::move(tmp));
+            tmp.clear();
+            while (i < len && command[i + 1] == ' ')
+                i++;
+        }
+        else
+            tmp += command[i];
+        i++;
     }
+    if (!tmp.empty() && tmp[0] != '\n')
+        tokens.push_back(std::move(tmp));
+    std::string &lastToken = tokens.back();
+    if (!lastToken.empty() && lastToken.back() == '\n')
+        lastToken.pop_back();
+//     std::vector<std::string> tokens;
+//     std::string nstring = normalizeLineEnding(command);
+//    char* cstr = new char[nstring.length() + 1];
+//     std::strcpy(cstr, nstring.c_str());
+//     char* token = std::strtok(cstr, " ");
+//     while (token != nullptr) 
+//     {
+//         tokens.push_back(token);
+//         token = std::strtok(nullptr, " ");
+//     }
     
-    delete[] cstr;
-    for (size_t i = 0; i < tokens.size(); ++i)
+//     delete[] cstr;
+//     //process the command
+    // print tokens for debugging
+    std::cout << "tokens size:" << tokens.size() << std::endl;
+    for (size_t i = 0; i < tokens.size(); i++)
     {
-        std::cout << "-" << tokens[i] << "-" << std::endl;
+        std::cout << tokens[i] << std::endl;
     }
-    //process the command
+
     processCommand(client, tokens);
 }
 
-std::string Server::readFromClient(int client_fd)
+std::string Server::readFromClient(Client *client)
 {
     char buffer[1024];
-    std::memset(buffer, 0, sizeof(buffer));
+    std::memset(, 0, sizeof(buffer));
 
-    int len = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-	std::string message = buffer;
-    if (len > 0)
-        std::cout << message;
-    if (len == 0)
+    int len = recv(client->getFd(), buffer, sizeof(buffer) - 1, 0);
+    if (len <= 0)
     {
-        std::cout << "Client :" << client_fd << " disconnected" << std::endl;
-        close(client_fd);
-        removeClient(client_fd);
+        if (len == 0)
+        {
+            std::cout << RED << "Client: " << client->getFd() << " disconnected" << RESET << std::endl;
+            close(client->getFd());
+            removeClient(client->getFd());
+        }
         return "";
     }
-    // else
-    // {
-    //     std::cout << "Error reading from client " << client_fd << std::endl;
-    //     close(client_fd);
-    //     removeClient(client_fd);
-    //     return "";
-    // }
-    return message;
+    std::string command = buffer;
+    std::cout << "command: " << command << std::endl;
+    // client->_buffer.append(command);
+    normalizeLineEnding(client->_buffer);
+    if (client->_buffer.find('\n') != std::string::npos && client->_buffer.size() > 1)
+    {
+        parseCommand(client);
+        client->_buffer.clear();
+    }
+    return command;
 }
+
+
 
 void Server::initCode()
 {
@@ -632,9 +766,16 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
                 // std::cout << "Client " << client_fd << " is ready to read" << std::endl;
                 Client *client = _clients[_fdsVector[i].fd];
                 client->setFd(_fdsVector[i].fd);
-				rawMessage = readFromClient(_fdsVector[i].fd);
-				if (!rawMessage.empty())
-					parseCommand(client, rawMessage);
+				readFromClient(client);
+                if(this->_clients.find(client_fd) != this->_clients.end())
+                {
+                    size_t pos = client->_buffer.find("\n");
+                    if (pos != std::string::npos)
+                        client->_buffer = client->_buffer.substr(pos + 1, client->_buffer.size());
+                }
+                // std::cout << "rawMessage: " << rawMessage << std::endl;
+				// if (!rawMessage.empty())
+				// 	parseCommand(client, rawMessage);
                 // handleClient(client);
             }
         }

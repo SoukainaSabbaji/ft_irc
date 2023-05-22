@@ -61,6 +61,26 @@ void Channel::removeClient(Client *client)
     }
 }
 
+bool Channel::CheckOperator(Client *client)
+{
+    for (size_t i = 0; i < _operators.size(); i++)
+    {
+        if (_operators[i] == client->getNickname())
+            return true;
+    }
+    return false;
+}
+
+bool    Channel::CheckMember(Client *client)
+{
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i] == client)
+            return true;
+    }
+    return false;
+}
+
 
 void    Channel::SendJoinReplies(Client *client)
 {
@@ -76,6 +96,12 @@ void    Channel::SendJoinReplies(Client *client)
     // this->_server->sendMessage(NULL, client, RPL_TOPIC, 0, " " + this->getChannelName() + " :" + this->getTopic(
     // this->_server->sendMessage(NULL, client, RPL_MOTD, 0, " :- " + this->getChannelName() + "  " + this->getTopic());
     // this->_server->sendMessage(NULL, client, RPL_ENDOFMOTD, 0, " :End of MOTD command");
+}
+
+void    Channel::TheBootlegBroadcast(std::string message)
+{
+    for (size_t i = 0; i < this->getClients().size(); i++)
+        send(this->getClients()[i]->getFd(), message.c_str(), message.length(), 0);
 }
 
 
