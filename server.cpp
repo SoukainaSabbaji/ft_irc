@@ -584,9 +584,9 @@ void Server::parseCommand(Client *client)
 std::string Server::readFromClient(Client *client)
 {
     char buffer[1024];
-    std::memset(, 0, sizeof(buffer));
+    std::memset(buffer, 0, sizeof(buffer));
 
-    int len = recv(client->getFd(), buffer, sizeof(buffer) - 1, 0);
+    int len = recv(client->getFd(), buffer, 500, 0);
     if (len <= 0)
     {
         if (len == 0)
@@ -598,7 +598,7 @@ std::string Server::readFromClient(Client *client)
         return "";
     }
     std::string command = buffer;
-    std::cout << "command: " << command << std::endl;
+    client->_buffer.append(command);
     // client->_buffer.append(command);
     normalizeLineEnding(client->_buffer);
     if (client->_buffer.find('\n') != std::string::npos && client->_buffer.size() > 1)
