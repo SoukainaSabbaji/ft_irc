@@ -48,7 +48,7 @@ void	Server::checkAndAuth(Client *clt)
 		std::cout<<clt->getNickname()<<" authenticated"<<std::endl;
 		sendMessage(NULL, clt, 0, 1, "WELCOME TO THE BEST IRC SERVER MADE WITH LOVE BY SOUKI && SIXIE WE NAMED SOUKIXIE AS IT'S A TEAM WORK AND WE ARE THE BEST TEAM EVER");
 		sendMessage(NULL, clt, 0, 2, "your host is " + this->_serverName +", running the ver 0.0.1");
-		sendMessage(NULL, clt, 0, 3, "this server Was creates at " + this->creationDate );
+		sendMessage(NULL, clt, 0, 3, "this server Was created at " + this->creationDate );
 		sendMessage(NULL, clt, 0, 4, "AHAHA this feels like HELLO WORLD");
 	}
 }
@@ -371,6 +371,23 @@ void Server::_listCommand(Client *client, std::vector<std::string> tokens)
     }
 }
 
+std::string getReason(std::vector<std::string> tokens)
+{
+    std::string reason;
+    if (tokens[3][0] == ':')
+    {
+        for (size_t i = 3; i < tokens.size(); i++)
+        {
+            reason += tokens[i];
+            if (i != tokens.size() - 1)
+                reason += " ";
+        }
+    }
+    else
+        reason = tokens[3];
+    return (reason);
+}
+
 void    Server::DeleteEmptyChan(Channel *channel,std::vector<Channel*> _channels)
 {
     //check if the channel is empty , if so delete it
@@ -385,16 +402,13 @@ void    Server::DeleteEmptyChan(Channel *channel,std::vector<Channel*> _channels
 void Server::_partCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
-    std::cout << tokens.size() << std::endl;
-    std::cout << "--" <<tokens[0] << "--" << std::endl;
-    std::cout << "--" <<tokens[1] << "--" << std::endl; 
     if (tokens.size() < 2)
     {
         sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "PART :Not enough parameters");
         return;
     }
     std::vector<std::string> channels = SplitTargets(tokens[1]);
-    std::string reason = tokens[2];
+    std::string reason = getReason(tokens);
     while (channels.size())
     {
         std::string channelName = channels.back();
@@ -433,6 +447,8 @@ Client *Server::FindClientInChannel(std::string target, Channel *channel)
     return (NULL);
 }
 
+
+
 void Server::_kickCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
@@ -444,7 +460,7 @@ void Server::_kickCommand(Client *client, std::vector<std::string> tokens)
     //split channels and targets to kick
     std::vector<std::string> channels = SplitTargets(tokens[1]);
     std::vector<std::string> targets = SplitTargets(tokens[2]);
-    std::string reason = tokens[3];
+    std::string reason = getReason(tokens);
     //check if the client requesting the kick is an operator in the channel
     while (channels.size())
     {
