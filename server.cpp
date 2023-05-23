@@ -42,6 +42,7 @@ void Server::removeClient(int client_fd)
 
 void	Server::checkAndAuth(Client *clt)
 {
+
 	if (!clt->isAuthenticated() && !clt->getNickname().empty() && !clt->getUsername().empty() && clt->getClaimedPsswd() == this->_password)
 	{
 		clt->setAuthentication(true);
@@ -119,13 +120,15 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
         sendMessage(NULL, client, ERR_NONICKNAMEGIVEN ,0," :No nickname given");
         return;
     }
-	if (!nickAvailable(tokens[1]))
+	std::string token = tokens[1].substr(0, tokens[1].find('\r'));
+	if (!nickAvailable(token))
 	{
-		sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0, " :" + tokens[1] + " is already in use");
+		std::cout<<"hehehe"<<std::endl;
+		sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0, " :" + token + " is already in use");
 		return ;
 	}
-	client->setNickname(tokens[1].substr(0, tokens[1].find('\r')));
-	this->_nicknames.insert(std::pair<std::string, Client*>(tokens[1], client));
+	client->setNickname(token);
+	this->_nicknames.insert(std::pair<std::string, Client*>(token, client));
 	checkAndAuth(client);
 }
 
@@ -261,12 +264,12 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
     CheckAuthentication(client);
     if (tokens.size() < 2)
     {
-        sendMessage(NULL, client, ERR_NORECIPIENT, 0, " :No recipient given " + tokens[0]);
+        sendMessage(NULL, client, ERR_NORECIPIENT, 0, " No recipient given " + tokens[0]);
         return;
     }
 	else if (tokens.size() < 3)
 	{
-		sendMessage(NULL, client, ERR_NOTEXTTOSEND, 0, " :No text to send");
+		sendMessage(NULL, client, ERR_NOTEXTTOSEND, 0, " No text to send");
 		return;
 	}
     //fetch target and message
