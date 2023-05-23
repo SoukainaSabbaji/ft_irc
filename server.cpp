@@ -117,9 +117,10 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
     if (tokens.size() < 2)
     {
         // send error message to client
-        sendMessage(NULL, client, ERR_NONICKNAMEGIVEN ,0,":No nickname given");
+        sendMessage(NULL, client, ERR_NONICKNAMEGIVEN ,0," :No nickname given");
         return;
     }
+        std::cout << "pass command" << std::endl;
 	if (!nickAvailable(tokens[1]))
 	{
 		sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0, " :" + tokens[1] + " is already in use");
