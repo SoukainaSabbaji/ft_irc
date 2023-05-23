@@ -32,12 +32,12 @@ class Channel
         int                     _maxUsers;
         bool                    _isPrivate;
         Client                  *_owner;
-        std::vector<Client*>     _clients;
         std::vector<std::string> _bannedUsers;
         std::vector<std::string> _operators;
         std::vector<std::string> _invitedUsers;
         
     public:
+        std::vector<Client*>     _clients;
         Server                  *_server;
         Channel();
         Channel(const std::string &name, const std::string &topic, const std::string &mode, int maxUsers);

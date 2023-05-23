@@ -101,7 +101,10 @@ void    Channel::SendJoinReplies(Client *client)
 void    Channel::TheBootlegBroadcast(std::string message)
 {
     for (size_t i = 0; i < this->getClients().size(); i++)
+    {
+        std::cout << "Sending message to " << this->getClients()[i]->getNickname() << std::endl;
         send(this->getClients()[i]->getFd(), message.c_str(), message.length(), 0);
+    }
 }
 
 
@@ -145,8 +148,8 @@ void    Channel::AddMember(Client *client, std::string password)
     }
     else 
     {
+        // std::cout << "Adding client to channel" << std::endl;
         _clients.push_back(client);
-        //print clients on channel
         if (this->isEmpty())
         {
             this->setOperator(client);
