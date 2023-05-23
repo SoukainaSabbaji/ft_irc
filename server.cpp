@@ -46,10 +46,10 @@ void	Server::checkAndAuth(Client *clt)
 	{
 		clt->setAuthentication(true);
 		std::cout<<clt->getNickname()<<" authenticated"<<std::endl;
-		sendMessage(NULL, clt, 0, 1, "WELCOME TO THE BEST IRC SERVER MADE WITH LOVE BY SOUKI && SIXIE WE NAMED SOUKIXIE AS IT'S A TEAM WORK AND WE ARE THE BEST TEAM EVER");
-		sendMessage(NULL, clt, 0, 2, "your host is " + this->_serverName +", running the ver 0.0.1");
-		sendMessage(NULL, clt, 0, 3, "this server Was creates at " + this->creationDate );
-		sendMessage(NULL, clt, 0, 4, "AHAHA this feels like HELLO WORLD");
+		sendMessage(NULL, clt, 0, 1, " WELCOME TO THE BEST IRC SERVER MADE WITH LOVE BY SOUKI && SIXIE WE NAMED SOUKIXIE AS IT'S A TEAM WORK AND WE ARE THE BEST TEAM EVER");
+		sendMessage(NULL, clt, 0, 2, " your host is " + this->_serverName +", running the ver 0.0.1");
+		sendMessage(NULL, clt, 0, 3, " this server Was creates at " + this->creationDate );
+		sendMessage(NULL, clt, 0, 4, " AHAHA this feels like HELLO WORLD");
 	}
 }
 
@@ -77,14 +77,13 @@ char *Server::getAddr(Client *clt)
 void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std::string message)
 {
 	//we need to find a way for RPL
+	//RPL used to work idk what happened
 	std::string _host;
 
 	if (!src)
 		_host = "irc.soukixie.local";
 	else
 		_host = getAddr(src);
-		// free(tmphost); //check if we are allowed to use it
-	// std::cout<<this->rplCodeToStr[RPLCODE]<<std::endl;
 	if (!src && RPLCODE)
 		message = ":" + _host + " " + this->rplCodeToStr[RPLCODE] + " " + dst->getNickname() + " :" + message + "\r\n";
 	else if (!src && ERRCODE == 0)
@@ -103,10 +102,10 @@ void	Server::_userCommand(Client *client, std::vector<std::string> tokens)
 	if (tokens.size() < 4)
     {
         // send error message to client
-        sendMessage(NULL, client, ERR_NEEDMOREPARAMS ,0,"USER :Not enough parameters");
+        sendMessage(NULL, client, ERR_NEEDMOREPARAMS ,0," USER :Not enough parameters");
         return;
     }
-	client->setUsername(tokens[1]);
+	client->setUsername(tokens[1].substr(0, tokens[1].find('\r')));
 	// sendMessage(NULL, client, 0, 0,"Username Set to " + tokens[1]);
 	checkAndAuth(client);
 }
@@ -117,7 +116,7 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
     if (tokens.size() < 2)
     {
         // send error message to client
-        sendMessage(NULL, client, ERR_NONICKNAMEGIVEN ,0,":No nickname given");
+        sendMessage(NULL, client, ERR_NONICKNAMEGIVEN ,0," :No nickname given");
         return;
     }
 	if (!nickAvailable(tokens[1]))
@@ -125,7 +124,7 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
 		sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0, " :" + tokens[1] + " is already in use");
 		return ;
 	}
-	client->setNickname(tokens[1]);
+	client->setNickname(tokens[1].substr(0, tokens[1].find('\r')));
 	this->_nicknames.insert(std::pair<std::string, Client*>(tokens[1], client));
 	checkAndAuth(client);
 }
@@ -138,7 +137,7 @@ void	Server::_passCommand(Client *clt, std::vector<std::string> tokens)
         sendMessage(NULL, clt, ERR_NEEDMOREPARAMS ,0,"NICK :Not enough parameters");
         return;
     }
-	clt->setClaimedPsswd(tokens[1]);
+	clt->setClaimedPsswd(tokens[1].substr(0, tokens[1].find('\r')));
 	// sendMessage(NULL, clt, 0, 0, "PASSWD SET ");
 	checkAndAuth(clt);
 }
@@ -385,9 +384,9 @@ void    Server::DeleteEmptyChan(Channel *channel,std::vector<Channel*> _channels
 void Server::_partCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
-    std::cout << tokens.size() << std::endl;
-    std::cout << "--" <<tokens[0] << "--" << std::endl;
-    std::cout << "--" <<tokens[1] << "--" << std::endl; 
+    // std::cout << tokens.size() << std::endl;
+    // std::cout << "--" <<tokens[0] << "--" << std::endl;
+    // std::cout << "--" <<tokens[1] << "--" << std::endl; 
     if (tokens.size() < 2)
     {
         sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "PART :Not enough parameters");
@@ -572,11 +571,11 @@ void Server::parseCommand(Client *client)
 //     delete[] cstr;
 //     //process the command
     // print tokens for debugging
-    std::cout << "tokens size:" << tokens.size() << std::endl;
-    for (size_t i = 0; i < tokens.size(); i++)
-    {
-        std::cout << tokens[i] << std::endl;
-    }
+    // std::cout << "tokens size:" << tokens.size() << std::endl;
+    // for (size_t i = 0; i < tokens.size(); i++)
+    // {
+    //     std::cout << tokens[i] << std::endl;
+    // }
 
     processCommand(client, tokens);
 }
