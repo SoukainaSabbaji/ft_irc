@@ -94,7 +94,7 @@ void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std
     else if (!ERRCODE && !RPLCODE)
 		 message = ":" + src->getNickname() + "!" + src->getUsername() +"@"+_host +" PRIVMSG " + dst->getNickname() + " "+ message +"\r\n"; // works perfect for private messages can not send messages from server
 	else
-		message = ":" + this->_serverName + " " + this->errCodeToStr[ERRCODE] + " " + (dst->getNickname().empty() ? "*" : dst->getNickname()) + message + "\r\n"; // still not working
+		message = ":" + _host + " " + this->errCodeToStr[ERRCODE] + " " + (dst->getNickname().empty() ? "*" : dst->getNickname()) + message + "\r\n"; // still not working
 	send(dst->getFd(), message.c_str(), message.length(), 0);
 }
 
@@ -122,7 +122,7 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
     }
 	if (!nickAvailable(tokens[1]))
 	{
-		sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0, " :" + tokens[1] + " :Nickname already in use");
+		sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0, " :" + tokens[1] + " is already in use");
 		return ;
 	}
 	client->setNickname(tokens[1]);
