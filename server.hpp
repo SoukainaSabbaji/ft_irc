@@ -73,6 +73,7 @@ class Server
 		void _privMsgCommand(Client *client, std::vector<std::string> tokens);
         void _kickCommand(Client *client, std::vector<std::string> tokens);
         void _partCommand(Client *client, std::vector<std::string> tokens);
+        void _topicCommand(Client *client, std::vector<std::string> tokens);
         std::vector<std::string> SplitTargets(std::string tokens);
         // std::string    readFromClient(int client_fd);
         void    CheckAuthentication(Client *client);

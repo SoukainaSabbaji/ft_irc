@@ -185,7 +185,6 @@ void    Channel::AddMember(Client *client, std::string password)
         // std::cout << "Adding client to channel" << std::endl;
         if (this->isEmpty())
         {
-            std::cout << "Setting operator" << std::endl;
             this->setOperator(client);
             this->_owner = client;
         }
