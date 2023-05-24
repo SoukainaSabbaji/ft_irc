@@ -63,6 +63,7 @@ class Server
         void    writeToClient();
         void    removeClient(int client_fd);
         std::string normalizeLineEnding(std::string &str);
+		void theBootLegSendMessage(Client *dst, std::string msg);
         void sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE ,std::string message);
         void _nickCommand(Client *client, std::vector<std::string> tokens);
 		void _userCommand(Client *client, std::vector<std::string> tokens);
