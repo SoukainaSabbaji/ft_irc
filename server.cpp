@@ -427,6 +427,7 @@ void Server::_partCommand(Client *client, std::vector<std::string> tokens)
         if (!channel)
         {
             sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + channelName + " :No such channel");
+            // sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, channelName + "No such channel");
             channels.pop_back();
             continue;
         }
