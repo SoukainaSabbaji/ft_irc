@@ -58,7 +58,7 @@ class Channel
         bool isOnChannel(Client *client) const;
         bool isEmpty() const;
         bool isFull() const;
-        void removeClient(Client *client);
+        void removeClient(Client *_client, std::string reason);
         void setOperator(Client *client);
         bool isPrivate() const;
         bool isInvited(Client *client) const;
@@ -70,6 +70,7 @@ class Channel
         bool CheckOperator(Client *client);
         bool CheckMember(Client *client);
         void TheBootlegBroadcast(std::string message);
+        void destroyMember(Client *client);
         Channel &operator=(const Channel &channel);
 
 };

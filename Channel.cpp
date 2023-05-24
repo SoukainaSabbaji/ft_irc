@@ -49,17 +49,51 @@ bool Channel::isPrivate() const
     return _isPrivate;
 }
 
-void Channel::removeClient(Client *client)
+// void Channel::removeClient(Client *client)
+// {
+//     for (size_t i = 0; i < _clients.size(); i++)
+//     {
+//         if (_clients[i] == client)
+//         {
+//             _clients.erase(_clients.begin() + i);
+//             return;
+//         }
+//     }
+// }
+
+void Channel::destroyMember(Client* _client)
 {
-    for (size_t i = 0; i < _clients.size(); i++)
+    std::vector<Client*>::iterator clientIt = std::find(_clients.begin(), _clients.end(), _client);
+    if (clientIt != _clients.end())
+        _clients.erase(clientIt);
+    std::vector<std::string>::iterator operatorIt = std::find(_operators.begin(), _operators.end(), _client->getNickname());
+    if (operatorIt != _operators.end())
+        _operators.erase(operatorIt);
+    std::vector<std::string>::iterator invitedUserIt = std::find(_invitedUsers.begin(), _invitedUsers.end(), _client->getNickname());
+    if (invitedUserIt != _invitedUsers.end())
+        _invitedUsers.erase(invitedUserIt);
+}
+
+
+void Channel::removeClient(Client *_client, std::string reason)
+{
+    if (!CheckMember(_client))
     {
-        if (_clients[i] == client)
-        {
-            _clients.erase(_clients.begin() + i);
-            return;
-        }
+        this->_server->sendMessage(NULL, _client, ERR_NOTONCHANNEL, 0, " " + _name + " :You're not on that channel");
+        return;
+    }
+    std::stringstream ss;
+    ss << ":" << _client->getNickname() << "!~" << _client->getUsername() << "@localhost" << " PART " << _name << " " << reason << "\r\n";
+    std::string message = ss.str();
+    TheBootlegBroadcast(message);
+    destroyMember(_client);
+    if (this->_operators.size() == 0)
+    {
+        if (this->_clients.size())
+            this->_operators.push_back((*_clients.begin())->getNickname());
     }
 }
+
 
 bool Channel::CheckOperator(Client *client)
 {
@@ -149,12 +183,13 @@ void    Channel::AddMember(Client *client, std::string password)
     else 
     {
         // std::cout << "Adding client to channel" << std::endl;
-        _clients.push_back(client);
         if (this->isEmpty())
         {
+            std::cout << "Setting operator" << std::endl;
             this->setOperator(client);
             this->_owner = client;
         }
+        _clients.push_back(client);
         BroadcastJoinMessage(client);
         this->SendJoinReplies(client);
     }

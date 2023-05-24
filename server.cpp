@@ -275,8 +275,8 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
     //fetch target and message
     std::vector<std::string> recipients = SplitTargets(tokens[1]);
     //print recipients
-    for (size_t i = 0; i < recipients.size(); i++)
-        std::cout << "recipients: " << "-" << recipients[i] << "-" << std::endl;
+    // for (size_t i = 0; i < recipients.size(); i++)
+    //     std::cout << "recipients: " << "-" << recipients[i] << "-" << std::endl;
     std::string message = "";
 	for (size_t i = 2; i < tokens.size(); ++i)
 		message += tokens[i] + " ";
@@ -381,6 +381,8 @@ void Server::_listCommand(Client *client, std::vector<std::string> tokens)
 std::string getReason(std::vector<std::string> tokens)
 {
     std::string reason;
+    if (tokens.size() < 4)
+        return ("");
     if (tokens[3][0] == ':')
     {
         for (size_t i = 3; i < tokens.size(); i++)
@@ -398,7 +400,8 @@ std::string getReason(std::vector<std::string> tokens)
 void    Server::DeleteEmptyChan(Channel *channel,std::vector<Channel*> _channels)
 {
     //check if the channel is empty , if so delete it
-    if (channel->getMemberCount() == 0)
+    std::cout << "channel->getMemberCount(): " << channel->getMemberCount() << std::endl;
+    if (channel->getClients().size() == 0)
     {
         std::vector<Channel*>::iterator it = std::find(_channels.begin(), _channels.end(), channel);
         _channels.erase(it);
@@ -431,35 +434,42 @@ void Server::_partCommand(Client *client, std::vector<std::string> tokens)
             channels.pop_back();
             continue;
         }
-        if (!channel->CheckMember(client))
-        {
-            sendMessage(NULL, client, ERR_NOTONCHANNEL, 0, " " + channelName + " :You're not on that channel");
-            channels.pop_back();
-        }
         else
         {
-            std::cout << "part command" << std::endl;
-            channel->removeClient(client);
-            //:<nickname>!~<username>@<hostname> PART #channel :<reason>
-            std::string message = ":" + client->getNickname() + "!~" + client->getUsername() + "@localhost"  + " PART " + channelName + " " + reason + "\r\n";
-            channel->TheBootlegBroadcast(message);
+            channel->removeClient(client, reason);
             DeleteEmptyChan(channel,_channels);
         }
         channels.pop_back();
     }
 }
 
-Client *Server::FindClientInChannel(std::string target, Channel *channel)
+Client* Server::FindClientInChannel(std::string target, Channel* channel)
 {
-    std::vector<Client*>::const_iterator i;
-    for(i = channel->getClients().cbegin(); i != channel->getClients().cend(); i++)
+    std::vector<Client*> clients = channel->getClients();
+    std::vector<Client*>::const_iterator it;
+
+    for (it = clients.begin(); it != clients.end(); ++it)
     {
-        if ((*i)->getNickname() == target)
-            return (*i);
+        if ((*it)->getNickname() == target)
+            return *it;
     }
-    return (NULL);
+    return NULL;
 }
 
+
+void Server::YeetMember(Client *oper, Client *target, Channel *channel, std::string reason)
+{
+    if (!channel->CheckMember(target))
+    {
+        sendMessage(NULL, oper, ERR_USERNOTINCHANNEL, 0, target->getNickname() + " " + channel->getName() + " :They aren't on that channel");
+        return;
+    }
+    std::stringstream ss;
+    ss << ":" << oper->getNickname() << "!~" << oper->getUsername() << "@localhost" << " KICK " << channel->getName() << " "  << target->getNickname() << " " << reason << "\r\n";
+    std::string message = ss.str();
+    channel->TheBootlegBroadcast(message);    
+    channel->destroyMember(target);
+}
 
 
 void Server::_kickCommand(Client *client, std::vector<std::string> tokens)
@@ -503,7 +513,7 @@ void Server::_kickCommand(Client *client, std::vector<std::string> tokens)
                     targets.pop_back();
                     continue;
                 }
-                channel->removeClient(targetClient);
+                YeetMember(client, targetClient, channel, reason);
                 targets.pop_back();
             }
         }

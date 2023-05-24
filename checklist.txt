@@ -1,10 +1,10 @@
 -- password check if wrong and return error #sixie
 -- make a nickname available when the client it belongs to disconnects #sixie
 -- implement channels lol #souki
--- answer ping pong lol
+-- answer ping pong lol #sixie
 -- edit NICK to check if the user already has a nickname and wants to change it #sixie
--- NOTICE and PRIVMSG have an issue with spaces , counts the spaces as a token #sixie
-__ implement WHOWAS maybe? since it is easy #sixie
 __ allow empty password #sixie
 __ redo sendMessage to be more general #sixie
 -- channel MODE #sixie
+-- QUIT #sixie
+-- TOPIC #souki
