@@ -33,6 +33,9 @@ const char *Server::ListenError::what() const throw()
 void Server::removeClient(int client_fd)
 {
     std::map<int, Client*>::iterator it = _clients.find(client_fd);
+	Client *client = _clients[client_fd];
+	if (!client->getNickname().empty() && _nicknames[client->getNickname()])
+		_nicknames.erase(client->getNickname());
     if (it != _clients.end())
     {
         delete it->second;
@@ -65,6 +68,14 @@ char *Server::getAddr(Client *clt)
 	getsockname(clt->getFd(), (sockaddr *)&_host, &len);
 	return (inet_ntoa(_host.sin_addr));
 }
+
+///@brief this is the Boot leg send message because the first one only works in specific cases lol
+
+void Server::theBootLegSendMessage(Client *dst, std::string msg)
+{
+	send(dst->getFd(), msg.c_str(), msg.length(), 0);
+}
+
 
 /// @brief this function sends a message from a source to a destination
 /// it automatically adds the message prefixes to the message depending
