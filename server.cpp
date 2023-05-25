@@ -122,9 +122,10 @@ void	Server::_userCommand(Client *client, std::vector<std::string> tokens)
 	checkAndAuth(client);
 }
 
+	// i hate this nested function
+	// we need to add more checks on the nickname as it has a format and length
 void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
 {
-	// we need to add more checks on the nickname as it has a format and length
     if (tokens.size() < 2)
     {
         // send error message to client
@@ -134,13 +135,21 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
 	std::string token = tokens[1].substr(0, tokens[1].find('\r'));
 	if (!nickAvailable(token))
 	{
-		std::cout<<"hehehe"<<std::endl;
 		sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0, " :" + token + " is already in use");
 		return ;
 	}
-	client->setNickname(token);
-	this->_nicknames.insert(std::pair<std::string, Client*>(token, client));
-	checkAndAuth(client);
+	if (!client->getNickname().empty() && !client->isAuthenticated())
+	{
+		client->setNickname(token);
+		this->_nicknames.insert(std::pair<std::string, Client*>(token, client));
+		checkAndAuth(client);
+	}
+	else
+	{
+		_nicknames.erase(client->getNickname());
+		client->setNickname(token);
+		_nicknames.insert(std::pair<std::string, Client*>(token,client));
+	}
 }
 
 void	Server::_passCommand(Client *clt, std::vector<std::string> tokens)
@@ -148,9 +157,14 @@ void	Server::_passCommand(Client *clt, std::vector<std::string> tokens)
 	if (tokens.size() < 2)
     {
         // send error message to client
-        sendMessage(NULL, clt, ERR_NEEDMOREPARAMS ,0,"NICK :Not enough parameters");
+        sendMessage(NULL, clt, ERR_NEEDMOREPARAMS ,0," NICK :Not enough parameters");
         return;
     }
+	if (tokens[1].substr(0, tokens[1].find('\r')) != this->getPassword())
+	{
+		sendMessage(NULL, clt, ERR_PASSWDMISMATCH, 0, " Password incorrect");
+		return;
+	}
 	clt->setClaimedPsswd(tokens[1].substr(0, tokens[1].find('\r')));
 	// sendMessage(NULL, clt, 0, 0, "PASSWD SET ");
 	checkAndAuth(clt);
