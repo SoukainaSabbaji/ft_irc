@@ -55,6 +55,7 @@ class Channel
         std::string getChannelName() const;
         std::string getUsersList() const;
         std::string  getKey() const;
+        void setTopic(Client *client, const std::string &topic);
         bool isOnChannel(Client *client) const;
         bool isEmpty() const;
         bool isFull() const;

@@ -118,18 +118,12 @@ bool    Channel::CheckMember(Client *client)
 
 void    Channel::SendJoinReplies(Client *client)
 {
-    // this->_server->sendMessage(NULL, client, 0, RPL_NAMREPLY, " = " + this->getChannelName() + " :" + this->getUsersList());
-    // this->_server->sendMessage(NULL, client, 0, RPL_ENDOFNAMES, " " + this->getChannelName() + " :End of /NAMES list");
     std::string NamesReply = ":irc.soukixie.local 353 " + client->getNickname() + " = " + this->getChannelName() + " :" + this->getUsersList() + "\r\n";
     send(client->getFd(), NamesReply.c_str(), NamesReply.length(), 0);
     std::string EndOfNamesReply = ":irc.soukixie.local 366 " + client->getNickname() + " " + this->getChannelName() + " :End of /NAMES list" + "\r\n";
     send(client->getFd(), EndOfNamesReply.c_str(), EndOfNamesReply.length(), 0);
     if (this->getTopic() != "")
         this->_server->sendMessage(NULL, client, 0, RPL_TOPIC, " " + this->getChannelName() + " TOPIC :" + this->getTopic());
-    // this->_server->sendMessage(NULL, client, RPL_MOTDSTART, 0, " :- " + this->getChannelName() + " Message of the day - ");
-    // this->_server->sendMessage(NULL, client, RPL_TOPIC, 0, " " + this->getChannelName() + " :" + this->getTopic(
-    // this->_server->sendMessage(NULL, client, RPL_MOTD, 0, " :- " + this->getChannelName() + "  " + this->getTopic());
-    // this->_server->sendMessage(NULL, client, RPL_ENDOFMOTD, 0, " :End of MOTD command");
 }
 
 void    Channel::TheBootlegBroadcast(std::string message)
@@ -309,6 +303,16 @@ std::vector<std::string> Channel::getOperators() const
 Client *Channel::getOwner() const
 {
     return _owner;
+}
+
+void Channel::setTopic(Client *client, const std::string &topic)
+{
+    if (topic == "")
+    {
+        this->_server->sendMessage(NULL, client, RPL_NOTOPIC, 0, " " + this->getChannelName() + " :No topic is set");
+        return;
+    }
+
 }
 
 

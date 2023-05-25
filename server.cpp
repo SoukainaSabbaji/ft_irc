@@ -617,6 +617,31 @@ void    toLower(std::string &str)
     }
 }
 
+
+std::string getTopic(std::vector<std::string> tokens)
+{
+    std::string topic;
+    if (tokens.size() == 2)
+        return ("");
+    if (tokens[2][0] == ':')
+    {
+        for (size_t i = 2; i < tokens.size(); i++)
+        {
+            topic += tokens[i];
+            if (i != tokens.size() - 1)
+                topic += " ";
+        }
+    }
+    else
+        topic = tokens[2];
+    return (topic);
+}
+
+
+
+/// @brief the topic command is used to change or view the topic of a channel
+/// @param client the client requesting the topic change
+/// @param tokens contains the channel name and the new topic
 void    Server::_topicCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
@@ -625,7 +650,23 @@ void    Server::_topicCommand(Client *client, std::vector<std::string> tokens)
         sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "TOPIC :Not enough parameters");
         return;
     }
-    // else 
+    std::string topic = getTopic(tokens);
+    //remove ":" from the topic
+    if (topic[0] == ':')
+        topic.erase(0, 1);
+    std::cout << "topic: " << topic << std::endl;
+    Channel *channel = _findChannel(tokens[1]);
+    if (!channel)
+    {
+        sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + tokens[1] + " :No such channel");
+        return;
+    }
+    if (!channel->CheckMember(client))
+    {
+        sendMessage(NULL, client, ERR_NOTONCHANNEL, 0, " " + channel->getName() + " :You're not on that channel");
+        return;
+    }
+    channel->setTopic(client, topic);
 }
 
 
@@ -657,6 +698,7 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
         _partCommand(client, tokens);
     else if (command == "topic")
         _topicCommand(client, tokens);
+    // else if (command == "invite")
     // else 
     //     sendMessage(NULL, client, ERR_UNKNOWNCOMMAND, 0, " " + command + " :Unknown command");
 }
@@ -666,9 +708,7 @@ std::string Server::normalizeLineEnding(std::string &str)
     std::string nstring = str;
     std::size_t pos = 0;
     while ((pos = nstring.find("\r\n", pos)) != std::string::npos) 
-    { 
         nstring.replace(pos, 2, "\n");
-    }
     return (nstring);
 }
 
@@ -797,6 +837,7 @@ void Server::initCode()
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_MOTDSTART, "375"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_MOTD, "372"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_ENDOFMOTD, "376"));
+    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_NOTOPIC, "331"));
 }
 
 void Server::InitSocket()
