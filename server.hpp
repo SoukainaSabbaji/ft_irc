@@ -73,6 +73,7 @@ class Server
 		void _privMsgCommand(Client *client, std::vector<std::string> tokens);
         void _kickCommand(Client *client, std::vector<std::string> tokens);
         void _partCommand(Client *client, std::vector<std::string> tokens);
+        void _topicCommand(Client *client, std::vector<std::string> tokens);
         std::vector<std::string> SplitTargets(std::string tokens);
         // std::string    readFromClient(int client_fd);
         void    CheckAuthentication(Client *client);
@@ -87,6 +88,7 @@ class Server
         void    SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message, std::string command);
 		void    SendToRecipient(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel, std::string command);
         void    AddMember(Client *client, Channel *channel);
+        void    YeetMember(Client *oper, Client *target, Channel *channel, std::string reason);
         Client *FindClientInChannel(std::string target, Channel *channel);
         std::vector<std::string> CheckAndSeparate(Client *client, std::vector<std::string> tokens);
         friend class Channel;

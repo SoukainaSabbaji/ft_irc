@@ -300,8 +300,8 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
     //fetch target and message
     std::vector<std::string> recipients = SplitTargets(tokens[1]);
     //print recipients
-    for (size_t i = 0; i < recipients.size(); i++)
-        std::cout << "recipients: " << "-" << recipients[i] << "-" << std::endl;
+    // for (size_t i = 0; i < recipients.size(); i++)
+    //     std::cout << "recipients: " << "-" << recipients[i] << "-" << std::endl;
     std::string message = "";
 	for (size_t i = 2; i < tokens.size(); ++i)
 		message += tokens[i] + " ";
@@ -359,53 +359,135 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
         channel->AddMember(client, password);
         channels.pop_back();
     }
-    // for (size_t i = 0; i < _channels.size(); i++)
-    // {
-    //     Channel *channel = _channels[i];
-    //     std::cout << "channel name: " <<channel->getName() << std::endl;
-    // }
+}
+
+// void Server::_listCommand(Client *client, std::vector<std::string> tokens)
+// {
+//     CheckAuthentication(client);
+//     std::vector<std::string> channels;
+//     std::cout << tokens.size() << std::endl;
+//     if (tokens.size() > 1)
+//         channels = SplitTargets(tokens[1]);
+//     // if (channels.size() == 0)
+//     // {
+//     //     std::cout << "sending list" << std::endl;
+//     //     for (size_t i = 0; i < _channels.size(); i++)
+//     //     {
+//     //         Channel *channel = _channels[i];
+//     //         sendMessage(NULL, client, RPL_LIST, 0, " " + channel->getName() + " " + std::to_string(channel->getMemberCount()) + " :" + channel->getTopic());
+//     //     }
+//     //     sendMessage(NULL, client, RPL_LISTEND, 0, " :End of /LIST");
+//     // }
+//     // else
+//     // {
+//         while (channels.size())
+//         {
+//             std::cout << "sending list 2" << std::endl;
+//             std::string channelName = channels.back();
+//             Channel *channel = _findChannel(channelName);
+//             if (!channel)
+//             {
+//                 sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + channelName + " :No such channel");
+//                 channels.pop_back();
+//                 continue;
+//             }
+//             std::string message = ":irc.soukixie.local 366 " + client->getNickname() + " " + channel->getName() + " :";
+//             message += channel->getTopic() + "\r\n";
+//             send(client->getFd(), message.c_str(), message.size(), 0);
+//             // sendMessage(NULL, client, RPL_LIST, 0, " " + channel->getName() + " " + std::to_string(channel->getMemberCount()) + " :" + channel->getTopic());
+//             channels.pop_back();
+//         }
+//         sendMessage(NULL, client, RPL_LISTEND, 0, " :End of /LIST");
+//     // }
+// }
+
+
+#include <string>
+
+std::string ft_itoa(int num) {
+    std::string result;
+
+    // Handle the case when the number is 0 separately
+    if (num == 0) {
+        result = "0";
+        return result;
+    }
+
+    bool isNegative = false;
+    if (num < 0) {
+        isNegative = true;
+        num = -num;
+    }
+
+    // Convert each digit by repeatedly dividing by 10
+    while (num > 0) {
+        // Get the last digit by taking the remainder of division by 10
+        int digit = num % 10;
+        // Convert the digit to its character representation by adding '0'
+        result = static_cast<char>('0' + digit) + result;
+        // Remove the last digit from the number
+        num /= 10;
+    }
+
+    // Add a minus sign if the number was negative
+    if (isNegative) {
+        result = "-" + result;
+    }
+
+    return result;
 }
 
 void Server::_listCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
-    if (tokens.size() < 2)
+    std::vector<std::string> channels;
+    std::cout << tokens.size() << std::endl;
+    if (tokens.size() > 1)
+        channels = SplitTargets(tokens[1]);
+    //Start of /LIST command message
+    std::string StartMessage = ":irc.soukixie.local 321 " + client->getNickname() + "  :Start of /LIST command.\r\n";
+    send(client->getFd(), StartMessage.c_str(), StartMessage.size(), 0);
+    // if (channels.size() == 0)
+    // {
+    //     std::cout << "sending list" << std::endl;
+    //     for (size_t i = 0; i < _channels.size(); i++)
+    //     {
+    //         Channel *channel = _channels[i];
+    //         sendMessage(NULL, client, RPL_LIST, 0, " " + channel->getName() + " " + std::to_string(channel->getMemberCount()) + " :" + channel->getTopic());
+    //     }
+    //     sendMessage(NULL, client, RPL_LISTEND, 0, " :End of /LIST");
+    // }
+    // else
+    // {
+    while (channels.size())
     {
-        sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "LIST :Not enough parameters");
-        return;
-    }
-    std::vector<std::string> channels = SplitTargets(tokens[1]);
-    if (channels.size() == 0)
-    {
-        for (size_t i = 0; i < _channels.size(); i++)
+        std::cout << "sending list 2" << std::endl;
+        std::string channelName = channels.back();
+        Channel *channel = _findChannel(channelName);
+        if (!channel)
         {
-            Channel *channel = _channels[i];
-            sendMessage(NULL, client, RPL_LIST, 0, " " + channel->getName() + " " + std::to_string(channel->getMemberCount()) + " :" + channel->getTopic());
-        }
-        sendMessage(NULL, client, RPL_LISTEND, 0, " :End of /LIST");
-    }
-    else
-    {
-        while (channels.size())
-        {
-            std::string channelName = channels.back();
-            Channel *channel = _findChannel(channelName);
-            if (!channel)
-            {
-                sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + channelName + " :No such channel");
-                channels.pop_back();
-                continue;
-            }
-            sendMessage(NULL, client, RPL_LIST, 0, " " + channel->getName() + " " + std::to_string(channel->getMemberCount()) + " :" + channel->getTopic());
+            sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + channelName + " :No such channel");
             channels.pop_back();
+            continue;
         }
-        sendMessage(NULL, client, RPL_LISTEND, 0, " :End of /LIST");
+        std::string message;
+        std::stringstream ss;
+        ss << ":irc.soukixie.local 322 " << client->getNickname() << " " << channel->getName() << ft_itoa(channel->getClients().size()) << " :";
+        ss << channel->getTopic() << "\r\n";
+        message = ss.str();
+        send(client->getFd(), message.c_str(), message.size(), 0);
+        // sendMessage(NULL, client, RPL_LIST, 0, " " + channel->getName() + " " + std::to_string(channel->getMemberCount()) + " :" + channel->getTopic());
+        channels.pop_back();
     }
+        sendMessage(NULL, client, RPL_LISTEND, 0, " :End of /LIST");
+    // }
 }
 
 std::string getReason(std::vector<std::string> tokens)
 {
     std::string reason;
+    if (tokens.size() < 4)
+        return ("");
     if (tokens[3][0] == ':')
     {
         for (size_t i = 3; i < tokens.size(); i++)
@@ -423,7 +505,8 @@ std::string getReason(std::vector<std::string> tokens)
 void    Server::DeleteEmptyChan(Channel *channel,std::vector<Channel*> _channels)
 {
     //check if the channel is empty , if so delete it
-    if (channel->getMemberCount() == 0)
+    std::cout << "channel->getMemberCount(): " << channel->getMemberCount() << std::endl;
+    if (channel->getClients().size() == 0)
     {
         std::vector<Channel*>::iterator it = std::find(_channels.begin(), _channels.end(), channel);
         _channels.erase(it);
@@ -434,9 +517,6 @@ void    Server::DeleteEmptyChan(Channel *channel,std::vector<Channel*> _channels
 void Server::_partCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
-    // std::cout << tokens.size() << std::endl;
-    // std::cout << "--" <<tokens[0] << "--" << std::endl;
-    // std::cout << "--" <<tokens[1] << "--" << std::endl; 
     if (tokens.size() < 2)
     {
         sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "PART :Not enough parameters");
@@ -456,35 +536,42 @@ void Server::_partCommand(Client *client, std::vector<std::string> tokens)
             channels.pop_back();
             continue;
         }
-        if (!channel->CheckMember(client))
-        {
-            sendMessage(NULL, client, ERR_NOTONCHANNEL, 0, " " + channelName + " :You're not on that channel");
-            channels.pop_back();
-        }
         else
         {
-            std::cout << "part command" << std::endl;
-            channel->removeClient(client);
-            //:<nickname>!~<username>@<hostname> PART #channel :<reason>
-            std::string message = ":" + client->getNickname() + "!~" + client->getUsername() + "@localhost"  + " PART " + channelName + " " + reason + "\r\n";
-            channel->TheBootlegBroadcast(message);
+            channel->removeClient(client, reason);
             DeleteEmptyChan(channel,_channels);
         }
         channels.pop_back();
     }
 }
 
-Client *Server::FindClientInChannel(std::string target, Channel *channel)
+Client* Server::FindClientInChannel(std::string target, Channel* channel)
 {
-    std::vector<Client*>::const_iterator i;
-    for(i = channel->getClients().cbegin(); i != channel->getClients().cend(); i++)
+    std::vector<Client*> clients = channel->getClients();
+    std::vector<Client*>::const_iterator it;
+
+    for (it = clients.begin(); it != clients.end(); ++it)
     {
-        if ((*i)->getNickname() == target)
-            return (*i);
+        if ((*it)->getNickname() == target)
+            return *it;
     }
-    return (NULL);
+    return NULL;
 }
 
+
+void Server::YeetMember(Client *oper, Client *target, Channel *channel, std::string reason)
+{
+    if (!channel->CheckMember(target))
+    {
+        sendMessage(NULL, oper, ERR_USERNOTINCHANNEL, 0, target->getNickname() + " " + channel->getName() + " :They aren't on that channel");
+        return;
+    }
+    std::stringstream ss;
+    ss << ":" << oper->getNickname() << "!~" << oper->getUsername() << "@localhost" << " KICK " << channel->getName() << " "  << target->getNickname() << " " << reason << "\r\n";
+    std::string message = ss.str();
+    channel->TheBootlegBroadcast(message);    
+    channel->destroyMember(target);
+}
 
 
 void Server::_kickCommand(Client *client, std::vector<std::string> tokens)
@@ -528,7 +615,7 @@ void Server::_kickCommand(Client *client, std::vector<std::string> tokens)
                     targets.pop_back();
                     continue;
                 }
-                channel->removeClient(targetClient);
+                YeetMember(client, targetClient, channel, reason);
                 targets.pop_back();
             }
         }
@@ -544,16 +631,61 @@ void    toLower(std::string &str)
     }
 }
 
+
+std::string getTopic(std::vector<std::string> tokens)
+{
+    std::string topic;
+    if (tokens.size() == 2)
+        return ("");
+    if (tokens[2][0] == ':')
+    {
+        for (size_t i = 2; i < tokens.size(); i++)
+        {
+            topic += tokens[i];
+            if (i != tokens.size() - 1)
+                topic += " ";
+        }
+    }
+    else
+        topic = tokens[2];
+    return (topic);
+}
+
+
+
+/// @brief the topic command is used to change or view the topic of a channel
+/// @param client the client requesting the topic change
+/// @param tokens contains the channel name and the new topic
+void    Server::_topicCommand(Client *client, std::vector<std::string> tokens)
+{
+    CheckAuthentication(client);
+    if (tokens.size() == 2 && tokens[1] == ":")
+    {
+        sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "TOPIC :Not enough parameters");
+        return;
+    }
+    std::string topic = getTopic(tokens);
+    //remove ":" from the topic
+    if (topic[0] == ':')
+        topic.erase(0, 1);
+    std::cout << "topic: " << topic << std::endl;
+    Channel *channel = _findChannel(tokens[1]);
+    if (!channel)
+    {
+        sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " " + tokens[1] + " :No such channel");
+        return;
+    }
+    if (!channel->CheckMember(client))
+    {
+        sendMessage(NULL, client, ERR_NOTONCHANNEL, 0, " " + channel->getName() + " :You're not on that channel");
+        return;
+    }
+    channel->setTopic(client, topic);
+}
+
+
 void Server::processCommand(Client *client, std::vector<std::string> tokens)
 {
-    //remove \n from last token if it exists
-    // if (!tokens.empty())
-    // {
-    //     std::string& lastMessage = tokens.back();
-    //     if (!lastMessage.empty() && lastMessage.back() == '\n')
-    //         lastMessage.pop_back();
-    // }
-    // std::cout << "--" << tokens[0] << "--" << std::endl;
     if (tokens.empty())
         return;
     //print tokens
@@ -578,6 +710,9 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
         _kickCommand(client, tokens);
     else if (command == "part")
         _partCommand(client, tokens);
+    else if (command == "topic")
+        _topicCommand(client, tokens);
+    // else if (command == "invite")
     // else 
     //     sendMessage(NULL, client, ERR_UNKNOWNCOMMAND, 0, " " + command + " :Unknown command");
 }
@@ -587,9 +722,7 @@ std::string Server::normalizeLineEnding(std::string &str)
     std::string nstring = str;
     std::size_t pos = 0;
     while ((pos = nstring.find("\r\n", pos)) != std::string::npos) 
-    { 
         nstring.replace(pos, 2, "\n");
-    }
     return (nstring);
 }
 
@@ -718,6 +851,7 @@ void Server::initCode()
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_MOTDSTART, "375"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_MOTD, "372"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_ENDOFMOTD, "376"));
+    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_NOTOPIC, "331"));
 }
 
 void Server::InitSocket()

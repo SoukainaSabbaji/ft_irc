@@ -4,3 +4,6 @@
 __ allow empty password #sixie
 __ redo sendMessage to be more general #sixie
 -- channel MODE #sixie
+-- QUIT #sixie
+-- TOPIC #souki
+-- INVITE #souki
