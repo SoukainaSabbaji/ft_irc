@@ -14,6 +14,10 @@
 #define RPL_LISTSTART 321
 #define RPL_LIST 322
 #define RPL_NOTOPIC 331
+#define RPL_TOPICWHOTIME 333
+#define RPL_INVITING 341
+#define RPL_INVITELIST 346
+#define RPL_INVITED 345
 
 // add the rpl codes refer to rfc2812 section 5.1
 #endif

@@ -55,7 +55,7 @@ class Channel
         std::string getChannelName() const;
         std::string getUsersList() const;
         std::string  getKey() const;
-        void setTopic(Client *client, const std::string &topic);
+        void setTopic(Client *client, const std::string &topic, int token_flag);
         bool isOnChannel(Client *client) const;
         bool isEmpty() const;
         bool isFull() const;
@@ -72,6 +72,7 @@ class Channel
         bool CheckMember(Client *client);
         void TheBootlegBroadcast(std::string message);
         void destroyMember(Client *client);
+        void AddInvitedMember(Client *client, Client *invited);
         Channel &operator=(const Channel &channel);
 
 };

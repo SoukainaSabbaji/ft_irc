@@ -49,18 +49,6 @@ bool Channel::isPrivate() const
     return _isPrivate;
 }
 
-// void Channel::removeClient(Client *client)
-// {
-//     for (size_t i = 0; i < _clients.size(); i++)
-//     {
-//         if (_clients[i] == client)
-//         {
-//             _clients.erase(_clients.begin() + i);
-//             return;
-//         }
-//     }
-// }
-
 void Channel::destroyMember(Client* _client)
 {
     std::vector<Client*>::iterator clientIt = std::find(_clients.begin(), _clients.end(), _client);
@@ -239,6 +227,17 @@ bool Channel::isInvited(Client *client) const
     return false;
 }
 
+void    Channel::AddInvitedMember(Client *client, Client *invited)
+{
+    if (this->isOnChannel(invited))
+    {
+        this->_server->sendMessage(NULL, client, ERR_USERONCHANNEL, 0, " "+ this->getName() + " :is already on channel");
+        return;
+    }
+    else 
+        _invitedUsers.push_back(invited->getNickname());
+}
+
 bool Channel::isBanned(Client *client) const
 {
     for (size_t i = 0; i < _bannedUsers.size(); i++)
@@ -305,15 +304,46 @@ Client *Channel::getOwner() const
     return _owner;
 }
 
-void Channel::setTopic(Client *client, const std::string &topic)
+
+
+void Channel::setTopic(Client *client, const std::string &topic, int token_flag)
 {
-    if (topic == "")
+    time_t now = time(0);
+    std::ostringstream oss;
+    oss << now;
+    std::string topic_time ;
+    if (topic == " ")
     {
         this->_server->sendMessage(NULL, client, RPL_NOTOPIC, 0, " " + this->getChannelName() + " :No topic is set");
         return;
     }
-
+    if (getMode() == "t" && !CheckOperator(client))
+    {
+        this->_server->sendMessage(NULL, client, ERR_CHANOPRIVSNEEDED, 0, " " + this->getChannelName() + " :You're not channel operator");
+        return;
+    }
+    if (token_flag)
+    {
+        _topic = topic;
+        topic_time = oss.str();
+        std::string topic_broadcast = ":" + client->getNickname() + "!~" + client->getUsername() + "@localhost" + " TOPIC " + this->getChannelName() + " " + topic + "\r\n";;
+        TheBootlegBroadcast(topic_broadcast);
+    }
+    else 
+    {
+        if (_topic == "")
+        {
+            std::cout << "No topic is set" << std::endl;
+            this->_server->sendMessage(NULL, client, 0, RPL_NOTOPIC, " " + this->getChannelName() + " :No topic is set.");
+        }
+        else
+        {
+            this->_server->sendMessage(NULL, client, 0, RPL_TOPIC, " " + this->getChannelName() + _topic);
+            this->_server->sendMessage(NULL, client, 0, RPL_TOPICWHOTIME, " " + this->getChannelName() + " " + client->getNickname() + " " + topic_time);
+        }
+    }
 }
+
 
 
 //assignment operator overload

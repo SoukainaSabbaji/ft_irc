@@ -74,6 +74,8 @@ class Server
         void _kickCommand(Client *client, std::vector<std::string> tokens);
         void _partCommand(Client *client, std::vector<std::string> tokens);
         void _topicCommand(Client *client, std::vector<std::string> tokens);
+        void _inviteCommand(Client *client, std::vector<std::string> tokens);
+        Client *findClientByNickname(const std::string &nickname);
         std::vector<std::string> SplitTargets(std::string tokens);
         // std::string    readFromClient(int client_fd);
         void    CheckAuthentication(Client *client);
@@ -91,6 +93,7 @@ class Server
         void    YeetMember(Client *oper, Client *target, Channel *channel, std::string reason);
         Client *FindClientInChannel(std::string target, Channel *channel);
         std::vector<std::string> CheckAndSeparate(Client *client, std::vector<std::string> tokens);
+        void    CheckMembership(Client *client, Channel *channel);
         friend class Channel;
         // Exceptions 
         class InvalidSocketFd : public std::exception
