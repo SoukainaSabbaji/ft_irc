@@ -286,9 +286,6 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
     }
     // fetch target and message
     std::vector<std::string> recipients = SplitTargets(tokens[1]);
-    // print recipients
-    //  for (size_t i = 0; i < recipients.size(); i++)
-    //      std::cout << "recipients: " << "-" << recipients[i] << "-" << std::endl;
     std::string message = "";
     for (size_t i = 2; i < tokens.size(); ++i)
         message += tokens[i] + " ";
@@ -640,6 +637,7 @@ void    Server::CheckMembership(Client *client, Channel *channel)
 
 void Server::_inviteCommand(Client* client, std::vector<std::string> tokens)
 {
+    CheckAuthentication(client);
     if (tokens.size() < 3)
     {
         sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "INVITE :Not enough parameters");
@@ -665,6 +663,61 @@ void Server::_inviteCommand(Client* client, std::vector<std::string> tokens)
     theBootLegSendMessage(client, ":localhost NOTICE @" + channel->getName() + " :" + client->getNickname() + " invited " + nickname + " into channel " + channel->getName() + "\r\n");
     theBootLegSendMessage(invitedClient, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" + " INVITE " + invitedClient->getNickname() + " " + channel->getName() + "\r\n");
 
+}
+
+std::vector<std::string> readLinesFromFile(const std::string &filename)
+{
+    std::vector<std::string> lines;
+    std::ifstream file(filename);
+    if (file.is_open())
+    {
+        std::string line;
+        while (std::getline(file, line))
+            lines.push_back(line);
+        file.close();
+    }
+    return lines;
+}
+
+std::string printCurrentTime() 
+{
+    std::time_t currentTime = std::time(nullptr);
+    std::string timeString = std::ctime(&currentTime);
+    return (timeString);
+}
+
+std::string FactGen()
+{
+    std::string filename = "obscureunsettlingfacts.txt";
+    std::vector<std::string> lines = readLinesFromFile(filename);
+    std::srand(std::time(0));
+    int randomIndex = std::rand() % lines.size();
+    return (lines[randomIndex]);
+}
+
+void Server::_botCommand(Client *client, std::vector<std::string> tokens)
+{
+    CheckAuthentication(client);
+    if (tokens.size() < 2)
+    {
+        sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "BOT :Not enough parameters, try BOT DATE or BOT FACT");
+        return;
+    }
+    std::string command = tokens[1];
+    if (command == "DATE")
+    {
+        std::string result = printCurrentTime();
+        // sendMessage(NULL, client, 0, 0, result);
+        theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" + " NOTICE " + client->getNickname() + " :" + "The time is: " + result + "\r\n");
+    }
+    else if (command == "FACT")
+    {
+        std::string result = FactGen();
+        // sendMessage(NULL, client, 0, 0, result);
+        theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" + " NOTICE " + client->getNickname() + " :" + "A fact that might be disturbing owo: " + result + "\r\n");
+    }
+    else
+        sendMessage(NULL, client, ERR_UNKNOWNCOMMAND, 0, "BOT :Unknown command, try BOT DATE or BOT FACT");
 }
 
 
@@ -698,6 +751,8 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
         _topicCommand(client, tokens);
     else if (command == "invite")
         _inviteCommand(client, tokens);
+    else if (command == "bot")
+        _botCommand(client, tokens);
     // else if (command == "invite")
     // else
     //     sendMessage(NULL, client, ERR_UNKNOWNCOMMAND, 0, " " + command + " :Unknown command");
@@ -875,7 +930,6 @@ std::string Server::getDate(void)
     time(&rawtime);
     tmp = ctime(&rawtime);
     now = tmp;
-    // free(tmp);
     now = now.substr(0, now.size() - 1);
     return (now);
 }

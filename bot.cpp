@@ -14,11 +14,11 @@ void sendMsg(int fd, const std::string &msg)
     write(fd, buffer, sizeof(buffer));
 }
 
-void printCurrentTime() 
+std::string printCurrentTime() 
 {
     std::time_t currentTime = std::time(nullptr);
     std::string timeString = std::ctime(&currentTime);
-    sendMsg(fd,timeString);
+    return (timeString);
 }
 
 std::vector<std::string> readLinesFromFile(const std::string &filename)
@@ -35,13 +35,13 @@ std::vector<std::string> readLinesFromFile(const std::string &filename)
     return lines;
 }
 
-void FactGen()
+std::string FactGen()
 {
     std::string filename = "obscureunsettlingfacts.txt";
     std::vector<std::string> lines = readLinesFromFile(filename);
     std::srand(std::time(0));
     int randomIndex = std::rand() % lines.size();
-    sendMsg(fd,lines[randomIndex]);
+    return (lines[randomIndex]);
 }
 
 int main()
