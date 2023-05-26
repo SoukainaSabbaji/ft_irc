@@ -577,9 +577,6 @@ std::string getTopic(std::vector<std::string> tokens)
     return (topic);
 }
 
-
-
-
 /// @brief the topic command is used to change or view the topic of a channel
 /// @param client the client requesting the topic change
 /// @param tokens contains the channel name and the new topic
@@ -607,9 +604,9 @@ void Server::_topicCommand(Client *client, std::vector<std::string> tokens)
     channel->setTopic(client, topic, token_flag);
 }
 
-Client* Server::findClientByNickname(const std::string& nickname)
+Client *Server::findClientByNickname(const std::string &nickname)
 {
-    std::map<int, Client*>::iterator it;
+    std::map<int, Client *>::iterator it;
     for (it = _clients.begin(); it != _clients.end(); ++it)
     {
         if (it->second->getNickname() == nickname)
@@ -620,10 +617,9 @@ Client* Server::findClientByNickname(const std::string& nickname)
     return nullptr;
 }
 
-
-void    Server::CheckMembership(Client *client, Channel *channel)
+void Server::CheckMembership(Client *client, Channel *channel)
 {
-     if (!channel->CheckOperator(client))
+    if (!channel->CheckOperator(client))
     {
         sendMessage(NULL, client, ERR_CHANOPRIVSNEEDED, 0, channel->getName() + " :You're not channel operator");
         return;
@@ -635,7 +631,7 @@ void    Server::CheckMembership(Client *client, Channel *channel)
     }
 }
 
-void Server::_inviteCommand(Client* client, std::vector<std::string> tokens)
+void Server::_inviteCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
     if (tokens.size() < 3)
@@ -645,8 +641,8 @@ void Server::_inviteCommand(Client* client, std::vector<std::string> tokens)
     }
     std::string nickname = tokens[1];
     std::string channelName = tokens[2];
-    Client* invitedClient = findClientByNickname(nickname);
-    Channel* channel = _findChannel(channelName);
+    Client *invitedClient = findClientByNickname(nickname);
+    Channel *channel = _findChannel(channelName);
     if (!invitedClient)
     {
         sendMessage(NULL, client, ERR_NOSUCHNICK, 0, nickname + " :No such nickname");
@@ -656,13 +652,12 @@ void Server::_inviteCommand(Client* client, std::vector<std::string> tokens)
     {
         sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, channelName + " :No such channel");
         return;
-    } 
+    }
     CheckMembership(client, channel);
     channel->AddInvitedMember(client, invitedClient);
     theBootLegSendMessage(client, ":localhost 341 " + client->getNickname() + " " + invitedClient->getNickname() + " " + channel->getName() + "\r\n");
     theBootLegSendMessage(client, ":localhost NOTICE @" + channel->getName() + " :" + client->getNickname() + " invited " + nickname + " into channel " + channel->getName() + "\r\n");
     theBootLegSendMessage(invitedClient, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" + " INVITE " + invitedClient->getNickname() + " " + channel->getName() + "\r\n");
-
 }
 
 std::vector<std::string> readLinesFromFile(const std::string &filename)
@@ -679,7 +674,7 @@ std::vector<std::string> readLinesFromFile(const std::string &filename)
     return lines;
 }
 
-std::string printCurrentTime() 
+std::string printCurrentTime()
 {
     std::time_t currentTime = std::time(nullptr);
     std::string timeString = std::ctime(&currentTime);
@@ -716,46 +711,47 @@ void Server::_botCommand(Client *client, std::vector<std::string> tokens)
         // sendMessage(NULL, client, 0, 0, result);
         theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" + " NOTICE " + client->getNickname() + " :" + "A fact that might be disturbing owo: " + result + "\r\n");
     }
+    else if (command == "HELP")
+        sendMessage(NULL, client, 0, 0, "BOT DATE: displays the current date and time\nBOT FACT: displays a random fact");
     else
         sendMessage(NULL, client, ERR_UNKNOWNCOMMAND, 0, "BOT :Unknown command, try BOT DATE or BOT FACT");
 }
-
 
 void Server::processCommand(Client *client, std::vector<std::string> tokens)
 {
     if (tokens.empty())
         return;
-    // print tokens
     for (size_t i = 0; i < tokens.size(); i++)
         std::cout << "--" << tokens[i] << "--" << std::endl;
+
     std::string &command = tokens[0];
-    // make the command lowercase
     toLower(command);
-    if (command == "nick")
-        _nickCommand(client, tokens);
-    else if (command == "user")
-        _userCommand(client, tokens);
-    else if (command == "pass")
-        _passCommand(client, tokens);
-    else if (command == "privmsg" || command == "notice") // needs fixes
-        _privMsgCommand(client, tokens);
-    else if (command == "join")
-        _joinCommand(client, tokens);
-    else if (command == "list")
-        _listCommand(client, tokens);
-    else if (command == "kick")
-        _kickCommand(client, tokens);
-    else if (command == "part")
-        _partCommand(client, tokens);
-    else if (command == "topic")
-        _topicCommand(client, tokens);
-    else if (command == "invite")
-        _inviteCommand(client, tokens);
-    else if (command == "bot")
-        _botCommand(client, tokens);
-    // else if (command == "invite")
-    // else
-    //     sendMessage(NULL, client, ERR_UNKNOWNCOMMAND, 0, " " + command + " :Unknown command");
+    typedef void (Server::*CommandFunction)(Client *, std::vector<std::string>);
+    std::map<std::string, CommandFunction> commandMap;
+    commandMap["nick"] = &Server::_nickCommand;
+    commandMap["user"] = &Server::_userCommand;
+    commandMap["pass"] = &Server::_passCommand;
+    commandMap["privmsg"] = &Server::_privMsgCommand;
+    commandMap["notice"] = &Server::_privMsgCommand; 
+    commandMap["join"] = &Server::_joinCommand;
+    commandMap["list"] = &Server::_listCommand;
+    commandMap["kick"] = &Server::_kickCommand;
+    commandMap["part"] = &Server::_partCommand;
+    commandMap["topic"] = &Server::_topicCommand;
+    commandMap["invite"] = &Server::_inviteCommand;
+    commandMap["bot"] = &Server::_botCommand;
+
+    std::map<std::string, CommandFunction>::iterator it = commandMap.find(command);
+    if (it != commandMap.end())
+    {
+        CommandFunction func = it->second;
+        (this->*func)(client, tokens);
+    }
+    else
+    {
+        // Unknown command
+        sendMessage(NULL, client, ERR_UNKNOWNCOMMAND, 0, " " + command + " :Unknown command");
+    }
 }
 
 std::string Server::normalizeLineEnding(std::string &str)
@@ -871,7 +867,7 @@ void Server::initCode()
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_MOTD, "372"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_ENDOFMOTD, "376"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_NOTOPIC, "331"));
-    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_TOPICWHOTIME , "333"));
+    this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_TOPICWHOTIME, "333"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_INVITED, "353"));
     this->rplCodeToStr.insert(std::pair<int, std::string>(RPL_INVITING, "341"));
 }
@@ -971,29 +967,23 @@ Server::Server(int port, const std::string &password) : _fd(-1), _port(port), _r
             _fdsVector.push_back(client_poll_fd);
             _clients.insert(std::pair<int, Client *>(client_fd, new Client()));
             _clients[client_fd]->setConnection(true);
-            // std::cout << GREEN << "New client connected" << RESET << std::endl;
+            std::cout << GREEN << "New client connected" << RESET << std::endl;
         }
         for (size_t i = 1; i < _fdsVector.size(); i++)
         {
-            client_fd = _fdsVector[i].fd;
+            int client_fd = _fdsVector[i].fd;
             if (_fdsVector[i].revents & POLLIN)
             {
-                // if (_clients[client_fd] && _clients[client_fd]->isConnected() && !_clients[client_fd]->isAuthenticated())
-                // authenticateUser(client_fd);
-                // std::cout << "Client " << client_fd << " is ready to read" << std::endl;
-                Client *client = _clients[_fdsVector[i].fd];
-                client->setFd(_fdsVector[i].fd);
+                Client *client = _clients[client_fd];
+                client->setFd(client_fd);
                 readFromClient(client);
-                if (this->_clients.find(client_fd) != this->_clients.end())
+
+                if (this->_clients.count(client_fd) > 0)
                 {
                     size_t pos = client->_buffer.find("\n");
                     if (pos != std::string::npos)
-                        client->_buffer = client->_buffer.substr(pos + 1, client->_buffer.size());
+                        client->_buffer.erase(0, pos + 1);
                 }
-                // std::cout << "rawMessage: " << rawMessage << std::endl;
-                // if (!rawMessage.empty())
-                // 	parseCommand(client, rawMessage);
-                // handleClient(client);
             }
         }
     }
