@@ -12,10 +12,9 @@
 #include <ctime>
 #include <poll.h>
 #include <fcntl.h>
-// #include <bits/stdc++.h>
 #include <map>
 #include <arpa/inet.h>
-#include "Channel.hpp"
+#include "../includes/Channel.hpp"
 #include "errorcode.hpp"
 #include "rplcode.hpp"
 #define RED    "\033[31m"
@@ -76,6 +75,7 @@ class Server
         void _topicCommand(Client *client, std::vector<std::string> tokens);
         void _inviteCommand(Client *client, std::vector<std::string> tokens);
         void _botCommand(Client *client, std::vector<std::string> tokens);
+        void _pingCommand(Client *client, std::vector<std::string> tokens);
         Client *findClientByNickname(const std::string &nickname);
         std::vector<std::string> SplitTargets(std::string tokens);
         // std::string    readFromClient(int client_fd);
@@ -85,7 +85,7 @@ class Server
 		char	*getAddr(Client *clt);
 		void	checkAndAuth(Client *clt);
 		void	initCode();
-        void    DeleteEmptyChan(Channel *channel,std::vector<Channel*>    _channels);
+        void    DeleteEmptyChan(Channel* channel, std::vector<Channel*>& _channels);
         void    BroadcastMessage(Client *client, Channel *target,const std::string &message);
 		void    findTargetsAndSendMessage(Client *client, std::vector<std::string> recipients, std::string message, std::string command);
         void    SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message, std::string command);

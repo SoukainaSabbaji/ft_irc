@@ -7,3 +7,12 @@ __ redo sendMessage to be more general #sixie
 -- QUIT #sixie
 -- TOPIC #souki
 -- INVITE #souki
+
+
+
+        join //issue when lime sends mode , gotta handle mode and see how it turns out
+        list 
+        kick
+        part
+        topic
+        invite

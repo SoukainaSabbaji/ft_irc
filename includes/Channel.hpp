@@ -13,7 +13,8 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <map>
-#include "Server.hpp"
+#include "../includes/Server.hpp"
+
 #define RED    "\033[31m"
 #define GREEN  "\033[32m"
 #define YELLOW "\033[33m"

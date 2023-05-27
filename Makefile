@@ -1,6 +1,6 @@
-SRCS			= Server.cpp Channel.cpp main.cpp Client.cpp 
+SRCS			= sources/Server.cpp sources/Channel.cpp sources/main.cpp sources/Client.cpp sources/parsing.cpp sources/commands.cpp
 OBJS			= $(SRCS:.cpp=.o)
-HEADERS			= Server.hpp Client.hpp Channel.hpp
+HEADERS			= includes/Server.hpp includes/Client.hpp includes/Channel.hpp
 
 CXXFLAGS		= -Wall -Wextra -Werror -std=c++98
 

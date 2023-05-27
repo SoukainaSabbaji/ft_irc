@@ -1,10 +1,6 @@
-#include "Channel.hpp"
-#include "Client.hpp"
-#include "Server.hpp"
-
-Channel::Channel()
-{
-}
+#include "../includes/Channel.hpp"
+#include "../includes/Client.hpp"
+#include "../includes/Server.hpp"
 
 Channel::Channel(const std::string &name, const std::string &topic, const std::string &mode, int maxUsers)
 {
@@ -118,7 +114,7 @@ void    Channel::TheBootlegBroadcast(std::string message)
 {
     for (size_t i = 0; i < this->getClients().size(); i++)
     {
-        std::cout << "Sending message to " << this->getClients()[i]->getNickname() << std::endl;
+
         send(this->getClients()[i]->getFd(), message.c_str(), message.length(), 0);
     }
 }
@@ -332,10 +328,7 @@ void Channel::setTopic(Client *client, const std::string &topic, int token_flag)
     else 
     {
         if (_topic == "")
-        {
-            std::cout << "No topic is set" << std::endl;
             this->_server->sendMessage(NULL, client, 0, RPL_NOTOPIC, " " + this->getChannelName() + " :No topic is set.");
-        }
         else
         {
             this->_server->sendMessage(NULL, client, 0, RPL_TOPIC, " " + this->getChannelName() + _topic);
@@ -343,8 +336,6 @@ void Channel::setTopic(Client *client, const std::string &topic, int token_flag)
         }
     }
 }
-
-
 
 //assignment operator overload
 Channel &Channel::operator=(const Channel &rhs)

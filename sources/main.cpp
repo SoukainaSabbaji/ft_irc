@@ -1,5 +1,7 @@
-#include "Server.hpp"
-#include "Client.hpp"
+#include "../includes/Server.hpp"
+
+#include "../includes/Client.hpp"
+
 
 bool validatePort(const std::string &port)
 {
@@ -42,6 +44,5 @@ int main(int argc , char **argv)
     else 
     {
         Server server(atoi(port.c_str()), pass);
-        // server.run();
     }
 }
