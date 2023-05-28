@@ -139,8 +139,7 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
     commandMap["topic"] = &Server::_topicCommand;
     commandMap["invite"] = &Server::_inviteCommand;
     commandMap["bot"] = &Server::_botCommand;
-    // commandMap["quit"] = &Server::_quitCommand;
-    // commandMap["quit"] = &Server::_quitCommand;
+    commandMap["quit"] = &Server::_quitCommand;
     commandMap["ping"] = &Server::_pingCommand;
 
     std::map<std::string, CommandFunction>::iterator it = commandMap.find(command);

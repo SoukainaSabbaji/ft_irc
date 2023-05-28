@@ -617,3 +617,26 @@ void Server::_pingCommand(Client *client, std::vector<std::string> tokens)
     std::string message = ":" + this->_serverName + " PONG " + origin + "\r\n";
     send(client->getFd(), message.c_str(), message.size(), 0);
 }
+
+void	Server::_quitCommand(Client *clt, std::vector<std::string> tokens)
+{
+	Client *client;
+	size_t	len;
+
+	if (tokens[0] == "quit")
+	{
+		len = _channels.size();
+		for (size_t i = 0; i < len; ++i)
+		{
+			client = FindClientInChannel(clt->getNickname(),_channels[i]);
+			if (client)
+			{
+				_channels[i]->TheBootlegBroadcast(":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" + + " QUIT " + ":Quit: client is a quitter booooo!!!");
+				_channels[i]->removeClient(client, "client is a quitter booo!!!");
+			}
+		}
+		std::cout<<clt->getFd()<<std::endl;
+		close(clt->getFd());
+		this->removeClient(clt->getFd());
+	}
+}

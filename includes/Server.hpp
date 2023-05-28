@@ -92,6 +92,7 @@ class Server
 		void    SendToRecipient(Client *client, std::vector<std::string> recipients, std::string message, bool isChannel, std::string command);
         void    AddMember(Client *client, Channel *channel);
         void    YeetMember(Client *oper, Client *target, Channel *channel, std::string reason);
+		void	_quitCommand(Client *clt, std::vector<std::string> tokens);
         Client *FindClientInChannel(std::string target, Channel *channel);
         std::vector<std::string> CheckAndSeparate(Client *client, std::vector<std::string> tokens);
         void    CheckMembership(Client *client, Channel *channel);
