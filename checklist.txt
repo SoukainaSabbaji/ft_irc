@@ -2,9 +2,8 @@
 -- implement channels lol #souki
 -- answer ping pong lol
 __ allow empty password #sixie
-__ redo sendMessage to be more general #sixie
+__ add checks on nickname #sixie
 -- channel MODE #sixie
--- QUIT #sixie
 -- TOPIC #souki
 -- INVITE #souki
 

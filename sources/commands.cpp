@@ -632,11 +632,11 @@ void	Server::_quitCommand(Client *clt, std::vector<std::string> tokens)
 			if (client)
 			{
 				_channels[i]->TheBootlegBroadcast(":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" + + " QUIT " + ":Quit: client is a quitter booooo!!!");
-				_channels[i]->removeClient(client, "client is a quitter booo!!!");
+				_channels[i]->removeClient(client, "Quit: client is a quitter booo!!!");
 			}
 		}
 		std::cout<<clt->getFd()<<std::endl;
-		close(clt->getFd());
+		theBootLegSendMessage(clt, "ERROR : Closing Link: "+ clt->getNickname() + "[Quit: client is a quitter booo!!]\r\n");
 		this->removeClient(clt->getFd());
 	}
 }

@@ -35,6 +35,19 @@ void Server::removeClient(int client_fd)
 {
     std::map<int, Client *>::iterator it = _clients.find(client_fd);
     Client *client = _clients[client_fd];
+	for(size_t i = 0; i < _fdsVector.size(); ++i)
+	{
+		if (client->getFd() == _fdsVector[i].fd)
+		{
+			pollfd tmp;
+			tmp = _fdsVector[i];
+			_fdsVector[i] = _fdsVector[_fdsVector.size() - 1];
+			_fdsVector[_fdsVector.size() - 1] = tmp;
+			_fdsVector.pop_back();
+			close(client->getFd());
+			break ;
+		}
+	}
     if (!client->getNickname().empty() && _nicknames[client->getNickname()])
         _nicknames.erase(client->getNickname());
     if (it != _clients.end())
