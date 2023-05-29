@@ -19,6 +19,10 @@
 #define GREEN  "\033[32m"
 #define YELLOW "\033[33m"
 #define RESET  "\033[0m"
+#define INV		0
+#define TPC		1
+#define KEY		2
+#define	LIM		3
 
 class Client;
 class Server;
@@ -36,7 +40,7 @@ class Channel
         std::vector<std::string> _bannedUsers;
         std::vector<std::string> _operators;
         std::vector<std::string> _invitedUsers;
-        
+        short					 _chnMode;
     public:
         std::vector<Client*>     _clients;
         Server                  *_server;
@@ -46,7 +50,7 @@ class Channel
         ~Channel();
         std::string getName() const;
         std::string getTopic() const;
-        std::string getMode() const;
+        short getMode() const;
         int getMemberCount() const; 
         int getMaxUsers() const;
         Client *getOwner() const;
@@ -57,11 +61,15 @@ class Channel
         std::string getUsersList() const;
         std::string  getKey() const;
         void setTopic(Client *client, const std::string &topic, int token_flag);
+		void setLimit(size_t limit);
         bool isOnChannel(Client *client) const;
         bool isEmpty() const;
         bool isFull() const;
         void removeClient(Client *_client, std::string reason);
         void setOperator(Client *client);
+		bool removeOperator(Client *client);
+		bool setMode(int mode);
+		bool removeMode(int mode);
         bool isPrivate() const;
         bool isInvited(Client *client) const;
         bool isBanned(Client *client) const;

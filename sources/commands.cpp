@@ -640,3 +640,60 @@ void	Server::_quitCommand(Client *clt, std::vector<std::string> tokens)
 		this->removeClient(clt->getFd());
 	}
 }
+
+void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
+{
+	std::stack<char> argsToAdd;
+	std::stack<char> argsToRm;
+	std::vector<Channel *> chnls;
+	Channel *chnl;
+	std::string known_params = "+-itklo";
+	size_t		argsHere;
+
+	if (tokens.size() < 3)
+		return (sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0,  " MODE :Not enough parameters"));
+	for (size_t i = 1; i < tokens.size(); ++i)
+	{
+		try
+		{
+			if (tokens[i][0] != '#')
+			{
+				argsHere = i;
+				break ;
+			}
+			chnl = _findChannel(tokens[i]);
+			if (chnl)
+				chnls.push_back(chnl);
+			if (i == tokens.size() - 1)
+				throw (i);
+			else
+				throw(chnl);
+		}
+		catch (Channel *chnl)
+		{
+			sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " MODE :No such channel " + tokens[i]);
+		}
+		catch (...)
+		{
+			sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE :Need more parameters");
+			return ;
+		}
+	}
+	for (size_t i = 0; i < tokens[argsHere].size(); ++i)
+	{
+		try
+		{
+			if (known_params.find(tokens[argsHere][i]) < 0 || known_params.find(tokens[argsHere][i]) >= tokens[argsHere].size())
+				throw ("hh lherba");
+			else
+			{
+				while (tokens[argsHere][i])
+			}
+		}
+		catch (...)
+		{
+			++i;
+		}
+	}
+}
+

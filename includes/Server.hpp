@@ -76,6 +76,7 @@ class Server
         void _inviteCommand(Client *client, std::vector<std::string> tokens);
         void _botCommand(Client *client, std::vector<std::string> tokens);
         void _pingCommand(Client *client, std::vector<std::string> tokens);
+		void _modeCommand(Client *client, std::vector<std::string> tokens);
         Client *findClientByNickname(const std::string &nickname);
         std::vector<std::string> SplitTargets(std::string tokens);
         // std::string    readFromClient(int client_fd);

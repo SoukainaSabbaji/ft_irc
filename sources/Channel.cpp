@@ -9,6 +9,7 @@ Channel::Channel(const std::string &name, const std::string &topic, const std::s
     _mode = mode;
     _maxUsers = maxUsers;
     _isPrivate = false;
+	_chnMode = 0;
 }
 
 Channel::Channel(const std::string &name, Client *owner)
@@ -19,6 +20,7 @@ Channel::Channel(const std::string &name, Client *owner)
     _maxUsers = 100;
     _isPrivate = false;
     _owner = owner;
+	_chnMode = 0;
 }
 
 bool Channel::isOnChannel(Client *client) const
@@ -127,7 +129,7 @@ int Channel::getMemberCount() const
 
 void Channel::CheckJoinErrors(Client *client, std::string password)
 {
-    if (this->getMode() == "i" && !this->isInvited(client))
+    if ((this->getMode() >> INV) % 2 && !this->isInvited(client))
     {
         this->_server->sendMessage(NULL, client, ERR_INVITEONLYCHAN, 0, " " + this->getChannelName() + " :Cannot join channel (+i)");
         return;
@@ -142,7 +144,7 @@ void Channel::CheckJoinErrors(Client *client, std::string password)
         this->_server->sendMessage(NULL, client, ERR_CHANNELISFULL, 0, " " + this->getChannelName() + " :Cannot join channel (+l)");
         return;
     }
-    if (password != "" && password != this->getKey() && this->getMode() == "k")
+    if (password != "" && password != this->getKey() && (this->getMode() >> KEY) % 2)
     {
         this->_server->sendMessage(NULL, client, ERR_BADCHANNELKEY, 0, " " + this->getChannelName() + " :Cannot join channel (+k)");
         return;
@@ -251,6 +253,36 @@ void Channel::setOperator(Client *client)
     _operators.push_back(client->getNickname());
 }
 
+bool Channel::removeOperator(Client *client)
+{
+	for (size_t i = 0; i <= _operators.size(); ++i)
+	{
+		if (i == _operators.size())
+			return (false);
+		if (_operators[i] == client->getNickname())
+		{
+			_operators[i] = _operators[_operators.size()];
+			_operators[_operators.size()] = client->getNickname();
+			_operators.pop_back();
+			break ;
+		} 
+	}
+	return (true);
+}
+
+bool	Channel::setMode(int mode)
+{
+	if (!(_chnMode >> mode) % 2)
+		_chnMode += 1 << mode;
+	return (true);
+}
+
+bool	Channel::removeMode(int mode)
+{
+	if ((_chnMode >> mode) % 2)
+		_chnMode -= 1 << mode;
+	return (true);
+}
 
 Channel::~Channel()
 {
@@ -266,9 +298,9 @@ std::string Channel::getTopic() const
     return _topic;
 }
 
-std::string Channel::getMode() const
+short Channel::getMode() const
 {
-    return _mode;
+    return _chnMode;
 }
 
 int Channel::getMaxUsers() const
@@ -300,7 +332,15 @@ Client *Channel::getOwner() const
     return _owner;
 }
 
-
+bool Channel::setLimit(size_t limit)
+{
+	if (!_maxUsers)
+		_maxUsers = limit;
+	else if (limit)
+		return (false);
+	return (true);
+	
+}
 
 void Channel::setTopic(Client *client, const std::string &topic, int token_flag)
 {
@@ -313,7 +353,7 @@ void Channel::setTopic(Client *client, const std::string &topic, int token_flag)
         this->_server->sendMessage(NULL, client, RPL_NOTOPIC, 0, " " + this->getChannelName() + " :No topic is set");
         return;
     }
-    if (getMode() == "t" && !CheckOperator(client))
+    if ((getMode() >> TPC) % 2 && !CheckOperator(client))
     {
         this->_server->sendMessage(NULL, client, ERR_CHANOPRIVSNEEDED, 0, " " + this->getChannelName() + " :You're not channel operator");
         return;

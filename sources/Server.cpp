@@ -154,6 +154,7 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
     commandMap["bot"] = &Server::_botCommand;
     commandMap["quit"] = &Server::_quitCommand;
     commandMap["ping"] = &Server::_pingCommand;
+	// commandMap["mode"] = &Server::_modeCommand;
 
     std::map<std::string, CommandFunction>::iterator it = commandMap.find(command);
     if (it != commandMap.end())
@@ -168,8 +169,6 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
         sendMessage(NULL, client, ERR_UNKNOWNCOMMAND, 0, " " + command + " :Unknown command");
     }
 }
-
-
 
 std::string Server::readFromClient(Client *client)
 {

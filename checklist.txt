@@ -1,6 +1,6 @@
 __ allow empty password #sixie
 -- channel MODE #sixie
-
+__ a user should have a limited number of channels #souki
 how to work on MODE :
 MODE #channel <mode>
 - you have to look for the target channel , necessary argument to have 
