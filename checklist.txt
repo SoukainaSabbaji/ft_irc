@@ -15,4 +15,7 @@ MODE #channel <mode>
             -":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE " + nameofchannel + " -o" + arg
 - the no such nick/channel and not enough parameters messages you can just get them from my code , already used em in other commands
 
+channel is ready in logic of the parsing the applyAddForAllChannels abd applyRmForAllChannels are the only ones left to be filled #sixie
+
+
         

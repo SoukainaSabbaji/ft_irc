@@ -641,6 +641,8 @@ void	Server::_quitCommand(Client *clt, std::vector<std::string> tokens)
 	}
 }
 
+/*TODO for sixie finish the logic each time check if the use is on channel then check if operator when all of that is done check the provided args*/
+
 void Server::applyAddForAllChannels(Client *client, std::vector<std::string> chnls, short mode, std::string param)
 {
 	std::vector<std::string> targets;
@@ -663,7 +665,9 @@ void Server::applyAddForAllChannels(Client *client, std::vector<std::string> chn
 
 static	void applyRmForAllChannels(Client *client, std::vector<std::string> chnls, short mode)
 {
-
+	/*TODO for sixie
+	*add logic*
+	*/
 }
 
 void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
