@@ -61,7 +61,7 @@ class Channel
         std::string getUsersList() const;
         std::string  getKey() const;
         void setTopic(Client *client, const std::string &topic, int token_flag);
-		void setLimit(size_t limit);
+		bool setLimit(size_t limit);
         bool isOnChannel(Client *client) const;
         bool isEmpty() const;
         bool isFull() const;

@@ -641,59 +641,103 @@ void	Server::_quitCommand(Client *clt, std::vector<std::string> tokens)
 	}
 }
 
-void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
+void Server::applyAddForAllChannels(Client *client, std::vector<std::string> chnls, short mode, std::string param)
 {
-	std::stack<char> argsToAdd;
-	std::stack<char> argsToRm;
-	std::vector<Channel *> chnls;
+	std::vector<std::string> targets;
 	Channel *chnl;
-	std::string known_params = "+-itklo";
-	size_t		argsHere;
 
-	if (tokens.size() < 3)
-		return (sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0,  " MODE :Not enough parameters"));
-	for (size_t i = 1; i < tokens.size(); ++i)
+	if (mode == 4)
 	{
-		try
+		targets = SplitTargets(param);
+		for (size_t i = 0; i < chnls.size() ;++i)
 		{
-			if (tokens[i][0] != '#')
+			chnl = _findChannel(chnls[i]);
+			if (!chnl)
 			{
-				argsHere = i;
-				break ;
+				sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " :no such channel " + chnls[i]);
+				continue ;
 			}
-			chnl = _findChannel(tokens[i]);
-			if (chnl)
-				chnls.push_back(chnl);
-			if (i == tokens.size() - 1)
-				throw (i);
-			else
-				throw(chnl);
-		}
-		catch (Channel *chnl)
-		{
-			sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " MODE :No such channel " + tokens[i]);
-		}
-		catch (...)
-		{
-			sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE :Need more parameters");
-			return ;
 		}
 	}
-	for (size_t i = 0; i < tokens[argsHere].size(); ++i)
+}
+
+static	void applyRmForAllChannels(Client *client, std::vector<std::string> chnls, short mode)
+{
+
+}
+
+void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
+{
+	std::vector<std::string> channels;
+	std::string knownArgs = "+-itklo";
+	size_t	holder = 0;
+
+	CheckAuthentication(client);
+	if (tokens.size() < 3)
+		return (sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE: need more params"));
+	channels = SplitTargets(tokens[1]);
+	for (size_t i = 2; i < tokens.size(); ++i)
 	{
-		try
+		for (size_t j = 0; j < tokens[i].size(); ++j)
 		{
-			if (known_params.find(tokens[argsHere][i]) < 0 || known_params.find(tokens[argsHere][i]) >= tokens[argsHere].size())
-				throw ("hh lherba");
-			else
+			if (knownArgs.find(tokens[i][j]) != std::string::npos)
 			{
-				while (tokens[argsHere][i])
+				while (tokens[i][j] == '+' || tokens[i][j] == '-')
+					++j;
+				if (tokens[i][j] == 'o' && (!j || tokens[i][j - 1] != '-'))
+					if (i + (++holder) < tokens.size())
+						applyAddForAllChannels(client, channels, 4, tokens[i + holder]); //operator
+					else
+					{
+						sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE: needs more params");
+						return ; // continuing will break the whole function's flow so i just return
+					}
+				else if (tokens[i][j] == 'o' && (!j || tokens[i][j - 1] == '-'))
+					applyRmForAllChannels(client, channels, 4);
+				else if (tokens[i][j] == 'l' && (!j || tokens[i][j - 1] != '-'))
+					if (i + (++holder) < tokens.size())
+						applyAddForAllChannels(client, channels, 3, tokens[i + holder]);
+					else
+					{
+						sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE: needs more params");
+						return ;
+					}
+				else if (tokens[i][j] == 'l' && (!j || tokens[i][j - 1] == '-'))
+					applyRmForAllChannels(client, channels, 3);
+				else if (tokens[i][j] == 'k')
+					if (i + (++holder) < tokens.size())
+						applyAddForAllChannels(client, channels, 2, tokens[i + holder]);
+					else
+					{
+						sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE: needs more params");
+						return ;
+					}
+				else if (tokens[i][j] == 't' && (!j || tokens[i][j - 1] != '-'))
+					if (i + (++holder) < tokens.size())
+						applyAddForAllChannels(client, channels, 1, tokens[i + holder]);
+					else
+					{
+						sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE: needs more params");
+						return ;
+					}
+				else if (tokens[i][j] == 't' && (!j || tokens[i][j - 1] == '-'))
+					applyRmForAllChannels(client, channels, 1);
+				else if (tokens[i][j] == 'i' && (!j || tokens[i][j - 1] != '-'))
+					if (i + (++holder) < tokens.size())
+						applyAddForAllChannels(client, channels, 0, tokens[i + holder]);
+					else
+					{
+						sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE: needs more params");
+						return ;
+					}
+				else if (tokens[i][j] == 'i' && (!j || tokens[i][j - 1] == '-'))
+					applyRmForAllChannels(client, channels, 0);
 			}
+			else
+				theBootLegSendMessage(client, "ERROR : Bad Args: "+ client->getNickname() + "[MODE: Bad args]\r\n");
 		}
-		catch (...)
-		{
-			++i;
-		}
+		i += holder - 1;
+		holder = 0;
 	}
 }
 
