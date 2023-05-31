@@ -95,7 +95,8 @@ class Server
         void    YeetMember(Client *oper, Client *target, Channel *channel, std::string reason);
 		void	_quitCommand(Client *clt, std::vector<std::string> tokens);
         Client *FindClientInChannel(std::string target, Channel *channel);
-			void applyAddForAllChannels(Client *client, std::vector<std::string> chnls, short mode, std::string param);
+		void applyAddForAllChannels(Client *client, std::vector<std::string> chnls, short mode, std::string param);
+		void applyRmForAllChannels(Client *client, std::vector<std::string> chnls, short mode, std::string param);
         std::vector<std::string> CheckAndSeparate(Client *client, std::vector<std::string> tokens);
         void    CheckMembership(Client *client, Channel *channel);
         friend class Channel;

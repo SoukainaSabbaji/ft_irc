@@ -72,6 +72,7 @@ class Channel
 		bool removeMode(int mode);
         bool isPrivate() const;
         bool isInvited(Client *client) const;
+		void setKey(std::string key);
         bool isBanned(Client *client) const;
         void AddMember(Client *client, std::string password);
         void SendJoinReplies(Client *client);

@@ -641,39 +641,150 @@ void	Server::_quitCommand(Client *clt, std::vector<std::string> tokens)
 	}
 }
 
-/*TODO for sixie finish the logic each time check if the use is on channel then check if operator when all of that is done check the provided args*/
+/*TODO for sixie check if mode is already and send an error if it's already set*/
 
 void Server::applyAddForAllChannels(Client *client, std::vector<std::string> chnls, short mode, std::string param)
 {
 	std::vector<std::string> targets;
+	std::vector<std::string> ops;
 	Channel *chnl;
 
-	if (mode == 4)
+	targets = SplitTargets(param);
+	for (size_t i = 0; i < chnls.size() ;++i)
 	{
-		targets = SplitTargets(param);
-		for (size_t i = 0; i < chnls.size() ;++i)
+		chnl = _findChannel(chnls[i]);
+		if (!chnl)
 		{
-			chnl = _findChannel(chnls[i]);
-			if (!chnl)
+			sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " :no such channel " + chnls[i]);
+			continue ;
+		}
+		if (!chnl->isOnChannel(client))
+		{
+			sendMessage(NULL, client, ERR_USERNOTINCHANNEL, 0, " MODE: user not on channel "+ chnl->getChannelName());
+			continue;
+		}
+		ops = chnl->getOperators();
+		if (!std::count(ops.begin(), ops.end(), client->getNickname()))
+		{
+			sendMessage(NULL, client, ERR_NOPRIVILEGES, 0, " MODE: Not operator on " + chnl->getChannelName());
+			continue;
+		}
+		if (mode == 3)
+		{
+			size_t j = 0;
+			while (j < param.size())
 			{
-				sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " :no such channel " + chnls[i]);
-				continue ;
+				if (!std::isdigit(param[j]))
+					break ;
+				++j;
 			}
+			if (j != param.size())
+			{
+				theBootLegSendMessage(client, "ERROR : Bad Args: "+ client->getNickname() + "[MODE: Bad args]\r\n");
+				continue;
+			}
+			chnl->setLimit(std::atoi(param.c_str()));
+			chnl->setMode(mode);
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +l " + param);
+		}
+		else if (mode == 4)
+		{
+			for (size_t j = 0; j < targets.size(); ++j)
+			{
+				if (!findClientByNickname(targets[j]))
+					sendMessage(NULL, client, ERR_NOSUCHNICK, 0, " MODE: no such nickname "+ targets[j]);
+				else
+				{
+					chnl->setOperator(findClientByNickname(targets[j]));
+					theBootLegSendMessage(client,":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +o" + targets[j]);
+				}
+			}
+		}
+		else if (mode == 2)
+		{
+			chnl->setKey(param);
+			chnl->setMode(mode);
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +k " + param);
+		}
+		else if (mode == 1)
+		{
+			chnl->setTopic(client, param, 1); //TODO: souki check if this is the right way still not sure 
+			chnl->setMode(mode);
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +t " + param);
+		}
+		else if (mode == 0)
+		{
+			chnl->setMode(mode);
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +i");
 		}
 	}
 }
 
-static	void applyRmForAllChannels(Client *client, std::vector<std::string> chnls, short mode)
+void Server::applyRmForAllChannels(Client *client, std::vector<std::string> chnls, short mode, std::string param)
 {
-	/*TODO for sixie
-	*add logic*
-	*/
+	std::vector<std::string> targets;
+	std::vector<std::string> ops;
+	Channel *chnl;
+
+	targets = SplitTargets(param);
+	for (size_t i = 0; i < chnls.size() ;++i)
+	{
+		chnl = _findChannel(chnls[i]);
+		if (!chnl)
+		{
+			sendMessage(NULL, client, ERR_NOSUCHCHANNEL, 0, " :no such channel " + chnls[i]);
+			continue ;
+		}
+		if (!chnl->isOnChannel(client))
+		{
+			sendMessage(NULL, client, ERR_USERNOTINCHANNEL, 0, " MODE: user not on channel "+ chnl->getChannelName());
+			continue;
+		}
+		ops = chnl->getOperators();
+		if (!std::count(ops.begin(), ops.end(), client->getNickname()))
+		{
+			sendMessage(NULL, client, ERR_NOPRIVILEGES, 0, " MODE: Not operator on " + chnl->getChannelName());
+			continue;
+		}
+		if (mode == 4)
+		{
+			for (size_t j = 0; j < targets.size(); ++j)
+			{
+				if (!findClientByNickname(targets[j]))
+					sendMessage(NULL, client, ERR_NOSUCHNICK, 0, " MODE: no such nickname "+ targets[j]);
+				else
+				{
+					chnl->removeOperator(findClientByNickname(targets[j]));
+					theBootLegSendMessage(client,":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " -o" + targets[j]);
+				}
+			}
+		}
+		else if (mode == 3)
+		{
+			chnl->setLimit(0);
+			chnl->removeMode(mode);
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " -l ");
+		}
+		else if (mode == 2)
+			continue ;
+		else if (mode == 1)
+		{
+			chnl->removeMode(mode);
+			// chnl->removeTopic(); //TODO: souki implement this function idk how topic really works
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " -t ");
+		}
+		else if (mode == 0)
+		{
+			chnl->removeMode(mode);
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " -i ");
+		}
+	}
 }
 
 void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
 {
 	std::vector<std::string> channels;
-	std::string knownArgs = "+-itklo";
+	std::string knownArgs = "+-itklosn";
 	size_t	holder = 0;
 
 	CheckAuthentication(client);
@@ -689,15 +800,23 @@ void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
 				while (tokens[i][j] == '+' || tokens[i][j] == '-')
 					++j;
 				if (tokens[i][j] == 'o' && (!j || tokens[i][j - 1] != '-'))
-					if (i + (++holder) < tokens.size())
+				{
+					if ((i + (++holder)) < tokens.size())
 						applyAddForAllChannels(client, channels, 4, tokens[i + holder]); //operator
 					else
 					{
 						sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE: needs more params");
 						return ; // continuing will break the whole function's flow so i just return
 					}
+				}
 				else if (tokens[i][j] == 'o' && (!j || tokens[i][j - 1] == '-'))
-					applyRmForAllChannels(client, channels, 4);
+					if (i + (++holder) < tokens.size())
+						applyRmForAllChannels(client, channels, 4, tokens[i + holder]);
+					else
+					{
+						sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE: needs more params");
+						return ; // continuing will break the whole function's flow so i just return
+					}
 				else if (tokens[i][j] == 'l' && (!j || tokens[i][j - 1] != '-'))
 					if (i + (++holder) < tokens.size())
 						applyAddForAllChannels(client, channels, 3, tokens[i + holder]);
@@ -707,7 +826,7 @@ void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
 						return ;
 					}
 				else if (tokens[i][j] == 'l' && (!j || tokens[i][j - 1] == '-'))
-					applyRmForAllChannels(client, channels, 3);
+					applyRmForAllChannels(client, channels, 3, "");
 				else if (tokens[i][j] == 'k')
 					if (i + (++holder) < tokens.size())
 						applyAddForAllChannels(client, channels, 2, tokens[i + holder]);
@@ -725,7 +844,7 @@ void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
 						return ;
 					}
 				else if (tokens[i][j] == 't' && (!j || tokens[i][j - 1] == '-'))
-					applyRmForAllChannels(client, channels, 1);
+					applyRmForAllChannels(client, channels, 1, "");
 				else if (tokens[i][j] == 'i' && (!j || tokens[i][j - 1] != '-'))
 					if (i + (++holder) < tokens.size())
 						applyAddForAllChannels(client, channels, 0, tokens[i + holder]);
@@ -735,12 +854,12 @@ void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
 						return ;
 					}
 				else if (tokens[i][j] == 'i' && (!j || tokens[i][j - 1] == '-'))
-					applyRmForAllChannels(client, channels, 0);
+					applyRmForAllChannels(client, channels, 0, "");
 			}
 			else
 				theBootLegSendMessage(client, "ERROR : Bad Args: "+ client->getNickname() + "[MODE: Bad args]\r\n");
 		}
-		i += holder - 1;
+		i += holder;
 		holder = 0;
 	}
 }

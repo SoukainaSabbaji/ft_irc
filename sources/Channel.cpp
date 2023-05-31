@@ -395,3 +395,8 @@ Channel &Channel::operator=(const Channel &rhs)
     }
     return *this;
 }
+
+void	Channel::setKey(std::string key)
+{
+	this->_key = key;
+}

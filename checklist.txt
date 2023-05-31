@@ -1,21 +1,2 @@
-__ allow empty password #sixie
--- channel MODE #sixie
 __ a user should have a limited number of channels #souki
-how to work on MODE :
-MODE #channel <mode>
-- you have to look for the target channel , necessary argument to have 
-- if the modes required are either +o -o or +k you have to check if there are 4 tokens 
--if the argument provided is +sn simply ignore because we're not required to do it
--if the mode required is either +o or -o you have to keep in mind that its used as follows :
-        - MODE <channel> <-o/+o> <nickname>
-        you have to find the target client  and either add them to the list of operators or remove them
-- if the mode is +i/-i +t/-t you simply have to set the mode and send the following message 
-            -":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE " + nameofchannel + " -i"
-- if the mode is one of the other modes that require an argument you have to send the following message :
-            -":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE " + nameofchannel + " -o" + arg
-- the no such nick/channel and not enough parameters messages you can just get them from my code , already used em in other commands
-
-channel is ready in logic of the parsing the applyAddForAllChannels abd applyRmForAllChannels are the only ones left to be filled #sixie
-
-
-        
+__ check if the limit of channel is reached, 0 is for no limit
