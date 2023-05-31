@@ -16,6 +16,20 @@ void Server::_userCommand(Client *client, std::vector<std::string> tokens)
     checkAndAuth(client);
 }
 
+bool ValidateNick(const std::string& nickname)
+{
+    if (!std::isalpha(nickname[0]) || nickname.empty() || nickname.size() > 9
+    || nickname.find_first_of(" ,*?!@.") != std::string::npos ||
+        nickname == "nick" || nickname == "NICK")
+        return false;
+    for (std::size_t i = 1; i < nickname.size(); ++i)
+    {
+        char ch = nickname[i];
+        if (!std::isalnum(ch) && ch != '_' && ch != '-' && ch != '[' && ch != ']')
+            return false;
+    }
+    return true;
+}
 // i hate this nested function
 // we need to add more checks on the nickname as it has a format and length
 void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
@@ -27,6 +41,11 @@ void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
         return;
     }
     std::string token = tokens[1].substr(0, tokens[1].find('\r'));
+    if (!ValidateNick(token))
+    {
+        sendMessage(NULL, client, ERR_ERRONEUSNICKNAME, 0, " :" + token + " :Erroneous nickname");
+        return;
+    }
     if (!nickAvailable(token))
     {
         sendMessage(NULL, client, ERR_NICKNAMEINUSE, 0, " :" + token + " is already in use");
@@ -76,17 +95,35 @@ Channel *Server::_findChannel(std::string channelName) const
     }
     return nullptr;
 }
+bool Server::nickAvailable(std::string nickname) const
+{
+    if (_nicknames.find(nickname) == _nicknames.end())
+        return (true);
+    return (false);
+}
+
 
 void Server::BroadcastMessage(Client *client, Channel *target, const std::string &message)
 {
+    std::string senderNick = client->getNickname();
+    std::string fullMessage = ":" + senderNick + " PRIVMSG " + target->getName() + " :" + message + "\r\n";
+
     std::vector<Client *> clients = target->getClients();
     for (size_t i = 0; i < clients.size(); i++)
     {
         Client *clientTarg = clients[i];
         if (clientTarg != client)
-            sendMessage(client, clientTarg, 0, 0, message);
+        {
+            int bytesSent = send(clientTarg->getFd(), fullMessage.c_str(), fullMessage.length(), 0);
+            if (bytesSent == -1)
+            {
+                std::cout << "Error sending message to client" << std::endl;
+            }
+        }
     }
 }
+
+
 
 void Server::SendToRecipients(Client *client, std::vector<std::string> recipients, std::string message, std::string command)
 {
@@ -114,7 +151,7 @@ void Server::SendToRecipient(Client *client, std::vector<std::string> recipients
     if (isChannel)
     {
         Channel *target = _findChannel(recipients[0]);
-        if (target)
+        if (target && target->CheckMember(client))
             BroadcastMessage(client, target, message);
         else
         {
@@ -146,12 +183,6 @@ void Server::findTargetsAndSendMessage(Client *client, std::vector<std::string> 
     }
 }
 
-bool Server::nickAvailable(std::string nickname) const
-{
-    if (_nicknames.find(nickname) == _nicknames.end())
-        return (true);
-    return (false);
-}
 
 void Server::CheckAuthentication(Client *client)
 {

@@ -64,10 +64,9 @@ void Server::checkAndAuth(Client *clt)
     {
         clt->setAuthentication(true);
         std::cout << YELLOW << clt->getNickname() << GREEN << " authenticated" << RESET << std::endl;
-        sendMessage(NULL, clt, 0, 1, " WELCOME TO THE BEST IRC SERVER MADE WITH LOVE BY SOUKI && SIXIE WE NAMED SOUKIXIE AS IT'S A TEAM WORK AND WE ARE THE BEST TEAM EVER");
+        sendMessage(NULL, clt, 0, 1, " Welcome to a mediocre at best implementation of the IRC protocol");
         sendMessage(NULL, clt, 0, 2, " your host is " + this->_serverName + ", running the ver 0.0.1");
-        sendMessage(NULL, clt, 0, 3, " this server Was creates at " + this->creationDate);
-        sendMessage(NULL, clt, 0, 4, " AHAHA this feels like HELLO WORLD");
+        sendMessage(NULL, clt, 0, 3, " this server Was created at " + this->creationDate);
     }
 }
 
