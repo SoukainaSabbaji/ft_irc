@@ -8,6 +8,7 @@ Client::Client()
     _isOperator = false;
 	_isConnected = false;
 	_isAuthenticated = false;
+	_nbrchannels = 0;
 }
 
 Client::Client(const std::string &nickname, const std::string &username, bool isOperator)
@@ -17,6 +18,7 @@ Client::Client(const std::string &nickname, const std::string &username, bool is
     _isOperator = isOperator;
 	_isConnected = false;
 	_isAuthenticated = false;
+	_nbrchannels = 0;
 }
 
 Client::~Client()

@@ -162,7 +162,13 @@ void    Channel::AddMember(Client *client, std::string password)
     }
     else 
     {
-        // std::cout << "Adding client to channel" << std::endl;
+        //check if the client joined the maximum number of channels of not yet
+        if (client->_nbrchannels == 10)
+        {
+            this->_server->sendMessage(NULL, client, ERR_TOOMANYCHANNELS, 0, " " + this->getChannelName() + " :You have joined too many channels");
+            return;
+        }
+        client->_nbrchannels++;
         if (this->isEmpty())
         {
             this->setOperator(client);

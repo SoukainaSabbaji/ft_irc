@@ -154,7 +154,6 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
     commandMap["quit"] = &Server::_quitCommand;
     commandMap["ping"] = &Server::_pingCommand;
 	commandMap["mode"] = &Server::_modeCommand;
-
     std::map<std::string, CommandFunction>::iterator it = commandMap.find(command);
     if (it != commandMap.end())
     {

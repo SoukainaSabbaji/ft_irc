@@ -34,6 +34,7 @@ class Server
     private:
         int                     _fd;
         int                     _port;
+        int                     _nbrchannels;
 		std::string				creationDate;
 		std::string				_serverName;
         bool                    _running;

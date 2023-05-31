@@ -261,9 +261,16 @@ void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
         Channel *channel = _findChannel(channelName);
         if (!channel)
         {
+            if (_nbrchannels >= 20)
+            {
+                sendMessage(NULL, client, ERR_TOOMANYCHANNELS, 0, " " + channelName + " :The maximum number of channels has been reached");
+                channels.pop_back();
+                continue;
+            }
             channel = new Channel(channelName, client);
             _channels.push_back(channel);
             channel->_server = this;
+            _nbrchannels++;
         }
         channel->AddMember(client, password);
         channels.pop_back();
@@ -894,4 +901,3 @@ void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
 		holder = 0;
 	}
 }
-

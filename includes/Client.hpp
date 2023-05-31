@@ -33,6 +33,7 @@ class Client
         std::string     _buffer;
         friend class Server;
     public:
+        int             _nbrchannels;
         Client();
         Client(const std::string &nickname, const std::string &username, bool isOperator);
         ~Client();
