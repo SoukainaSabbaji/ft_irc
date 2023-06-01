@@ -215,8 +215,14 @@ void Server::_privMsgCommand(Client *client, std::vector<std::string> tokens)
     // fetch target and message
     std::vector<std::string> recipients = SplitTargets(tokens[1]);
     std::string message = "";
-    for (size_t i = 2; i < tokens.size(); ++i)
-        message += tokens[i] + " ";
+	if (tokens[2][0] == ':')
+	{
+		tokens[2].erase(0, 1);
+    	for (size_t i = 2; i < tokens.size(); ++i)
+        	message += tokens[i] + " ";
+	}
+	else
+		message += tokens[2];
     findTargetsAndSendMessage(client, recipients, message, tokens[0]);
 }
 
