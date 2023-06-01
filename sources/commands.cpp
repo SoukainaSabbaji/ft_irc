@@ -814,11 +814,15 @@ void Server::applyRmForAllChannels(Client *client, std::vector<std::string> chnl
 			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " -l\r\n");
 		}
 		else if (mode == 2)
-			continue ;
+		{
+			chnl->removeMode(mode);
+			chnl->setKey("");
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " -k\r\n");
+		}
 		else if (mode == 1)
 		{
 			chnl->removeMode(mode);
-			// chnl->removeTopic(); //TODO: souki implement this function idk how topic really works
+			chnl->setTopic(client,"", 1); //TODO: souki implement this function idk how topic really works
 			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " -t\r\n");
 		}
 		else if (mode == 0)
