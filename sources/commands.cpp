@@ -723,7 +723,7 @@ void Server::applyAddForAllChannels(Client *client, std::vector<std::string> chn
 			}
 			chnl->setLimit(std::atoi(param.c_str()));
 			chnl->setMode(mode);
-			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +l " + param);
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " +l " + param + "\r\n");
 		}
 		else if (mode == 4)
 		{
@@ -734,7 +734,7 @@ void Server::applyAddForAllChannels(Client *client, std::vector<std::string> chn
 				else
 				{
 					chnl->setOperator(findClientByNickname(targets[j]));
-					theBootLegSendMessage(client,":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +o" + targets[j]);
+					theBootLegSendMessage(client,":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " +o" + targets[j]+"\r\n");
 				}
 			}
 		}
@@ -742,18 +742,18 @@ void Server::applyAddForAllChannels(Client *client, std::vector<std::string> chn
 		{
 			chnl->setKey(param);
 			chnl->setMode(mode);
-			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +k " + param);
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " +k " + param+"\r\n");
 		}
 		else if (mode == 1)
 		{
 			chnl->setTopic(client, param, 1); //TODO: souki check if this is the right way still not sure 
 			chnl->setMode(mode);
-			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +t " + param);
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " +t " + param+"\r\n");
 		}
 		else if (mode == 0)
 		{
 			chnl->setMode(mode);
-			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " +i");
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " +i\r\n");
 		}
 	}
 }
@@ -793,7 +793,7 @@ void Server::applyRmForAllChannels(Client *client, std::vector<std::string> chnl
 				else
 				{
 					chnl->removeOperator(findClientByNickname(targets[j]));
-					theBootLegSendMessage(client,":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " -o" + targets[j]);
+					theBootLegSendMessage(client,":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " -o" + targets[j] + "\r\n");
 				}
 			}
 		}
@@ -801,7 +801,7 @@ void Server::applyRmForAllChannels(Client *client, std::vector<std::string> chnl
 		{
 			chnl->setLimit(0);
 			chnl->removeMode(mode);
-			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " -l ");
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " -l\r\n");
 		}
 		else if (mode == 2)
 			continue ;
@@ -809,12 +809,12 @@ void Server::applyRmForAllChannels(Client *client, std::vector<std::string> chnl
 		{
 			chnl->removeMode(mode);
 			// chnl->removeTopic(); //TODO: souki implement this function idk how topic really works
-			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " -t ");
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " -t\r\n");
 		}
 		else if (mode == 0)
 		{
 			chnl->removeMode(mode);
-			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local" +  "MODE :" + chnl->getChannelName() + " -i ");
+			theBootLegSendMessage(client, ":" + client->getNickname() + "!~" + client->getUsername() + "@irc.soukixie.local: MODE :" + chnl->getChannelName() + " -i\r\n");
 		}
 	}
 }
@@ -884,13 +884,7 @@ void Server::_modeCommand(Client *client, std::vector<std::string> tokens)
 				else if (tokens[i][j] == 't' && (!j || tokens[i][j - 1] == '-'))
 					applyRmForAllChannels(client, channels, 1, "");
 				else if (tokens[i][j] == 'i' && (!j || tokens[i][j - 1] != '-'))
-					if (i + (++holder) < tokens.size())
-						applyAddForAllChannels(client, channels, 0, tokens[i + holder]);
-					else
-					{
-						sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, " MODE: needs more params");
-						return ;
-					}
+					applyAddForAllChannels(client, channels, 0, tokens[i + holder]);
 				else if (tokens[i][j] == 'i' && (!j || tokens[i][j - 1] == '-'))
 					applyRmForAllChannels(client, channels, 0, "");
 			}

@@ -9,7 +9,7 @@ NAME			= ircserv
 all:			$(NAME)
 
 $(NAME):		$(OBJS) $(HEADERS)
-				c++ $(CXXFLAGS) -o $(NAME) $(OBJS) -fsanitize=address
+				c++ $(CXXFLAGS) -o $(NAME) $(OBJS) #-fsanitize=address
 
 clean:
 				rm -f $(OBJS)
