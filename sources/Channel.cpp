@@ -116,7 +116,6 @@ void    Channel::TheBootlegBroadcast(std::string message)
 {
     for (size_t i = 0; i < this->getClients().size(); i++)
     {
-
         send(this->getClients()[i]->getFd(), message.c_str(), message.length(), 0);
     }
 }
