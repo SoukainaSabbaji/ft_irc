@@ -1,2 +1,0 @@
-__ a user should have a limited number of channels #souki
-__ check if the limit of channel is reached, 0 is for no limit

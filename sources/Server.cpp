@@ -99,10 +99,7 @@ void Server::theBootLegSendMessage(Client *dst, std::string msg)
 /// src to dst the prefixes will be added in the function.
 void Server::sendMessage(Client *src, Client *dst, int ERRCODE, int RPLCODE, std::string message)
 {
-    // we need to find a way for RPL
-    // RPL used to work idk what happened
     std::string _host;
-
     if (!src)
         _host = "irc.soukixie.local";
     else
@@ -132,9 +129,6 @@ void Server::processCommand(Client *client, std::vector<std::string> tokens)
 {
     if (tokens.empty())
         return;
-    for (size_t i = 0; i < tokens.size(); i++)
-        std::cout << "--" << tokens[i] << "--" << std::endl;
-
     std::string &command = tokens[0];
     toLower(command);
     typedef void (Server::*CommandFunction)(Client *, std::vector<std::string>);
@@ -387,17 +381,3 @@ bool Server::isRunning() const
 {
     return _running;
 }
-
-// example of the error handling
-//  :localhost 434 ssabbaji :Pass is not set
-
-// rpl message format
-//: server_name reply_code target :reply_message
-
-// error message format
-//: server_name ERROR error_code target :error_message
-
-//_privMsgCommand format
-//: sender_nick!sender_user@sender_host PRIVMSG target :message_text
-
-// send an error when no text is sent through notice , no user not found error

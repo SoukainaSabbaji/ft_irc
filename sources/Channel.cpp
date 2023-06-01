@@ -144,7 +144,7 @@ bool Channel::CheckJoinErrors(Client *client, std::string password)
         this->_server->sendMessage(NULL, client, ERR_CHANNELISFULL, 0, " " + this->getChannelName() + " :Cannot join channel (+l)");
         return false;
     }
-    if (password != "" && password != this->getKey() && (this->getMode() >> KEY) % 2)
+    if ((this->getMode() >> KEY) % 2 && password != this->getKey() && password != "")
     {
         this->_server->sendMessage(NULL, client, ERR_BADCHANNELKEY, 0, " " + this->getChannelName() + " :Cannot join channel (+k)");
         return false;
@@ -356,6 +356,7 @@ void Channel::setTopic(Client *client, const std::string &topic, int token_flag)
     std::ostringstream oss;
     oss << now;
     std::string topic_time ;
+    
     if (topic == " ")
     {
         this->_server->sendMessage(NULL, client, RPL_NOTOPIC, 0, " " + this->getChannelName() + " :No topic is set");

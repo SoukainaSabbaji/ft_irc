@@ -12,7 +12,6 @@ void Server::_userCommand(Client *client, std::vector<std::string> tokens)
         return;
     }
     client->setUsername(tokens[1].substr(0, tokens[1].find('\r')));
-    // sendMessage(NULL, client, 0, 0,"Username Set to " + tokens[1]);
     checkAndAuth(client);
 }
 
@@ -30,8 +29,7 @@ bool ValidateNick(const std::string& nickname)
     }
     return true;
 }
-// i hate this nested function
-// we need to add more checks on the nickname as it has a format and length
+
 void Server::_nickCommand(Client *client, std::vector<std::string> tokens)
 {
     if (tokens.size() < 2)
@@ -79,7 +77,6 @@ void Server::_passCommand(Client *clt, std::vector<std::string> tokens)
         return;
     }
     clt->setClaimedPsswd(tokens[1].substr(0, tokens[1].find('\r')));
-    // sendMessage(NULL, clt, 0, 0, "PASSWD SET ");
     checkAndAuth(clt);
 }
 
@@ -245,6 +242,9 @@ std::vector<std::string> Server::SplitTargets(std::string token)
     return (recipients);
 }
 
+/// @brief /NOTICE command
+/// @param client  client that sent the command
+/// @param tokens  command and parameters
 void Server::_joinCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
@@ -309,6 +309,10 @@ std::string ft_itoa(int num)
     return result;
 }
 
+
+/// @brief /LIST command
+/// @param client the client that sent the command
+/// @param tokens a vector containing the command and parameters
 void Server::_listCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
@@ -376,8 +380,9 @@ void Server::DeleteEmptyChan(Channel* channel, std::vector<Channel*>& _channels)
         }
     }
 }
-
-
+/// @brief /PART command
+/// @param client  client that sent the command
+/// @param tokens  command and parameters
 void Server::_partCommand(Client *client, std::vector<std::string> tokens)
 {
     CheckAuthentication(client);
@@ -386,7 +391,6 @@ void Server::_partCommand(Client *client, std::vector<std::string> tokens)
         sendMessage(NULL, client, ERR_NEEDMOREPARAMS, 0, "PART :Not enough parameters");
         return;
     }
-    // print list of channels in the server
     std::vector<std::string> channels = SplitTargets(tokens[1]);
     std::string reason = getReason(tokens);
     std::cout << _channels.size() << std::endl;
