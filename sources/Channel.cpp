@@ -127,34 +127,36 @@ int Channel::getMemberCount() const
     return (_clients.size());
 }
 
-void Channel::CheckJoinErrors(Client *client, std::string password)
+bool Channel::CheckJoinErrors(Client *client, std::string password)
 {
     if ((this->getMode() >> INV) % 2 && !this->isInvited(client))
     {
         this->_server->sendMessage(NULL, client, ERR_INVITEONLYCHAN, 0, " " + this->getChannelName() + " :Cannot join channel (+i)");
-        return;
+        return false;
     }
     if (this->isBanned(client))
     {
         this->_server->sendMessage(NULL, client, ERR_BANNEDFROMCHAN, 0, " " + this->getChannelName() + " :Cannot join channel (+b)");
-        return;
+        return false;
     }
     if (this->isFull())
     {
         this->_server->sendMessage(NULL, client, ERR_CHANNELISFULL, 0, " " + this->getChannelName() + " :Cannot join channel (+l)");
-        return;
+        return false;
     }
     if (password != "" && password != this->getKey() && (this->getMode() >> KEY) % 2)
     {
         this->_server->sendMessage(NULL, client, ERR_BADCHANNELKEY, 0, " " + this->getChannelName() + " :Cannot join channel (+k)");
-        return;
+        return false;
     }
+    return true;
 }
 
 void    Channel::AddMember(Client *client, std::string password)
 {
     //check if channel is invite mode and if client is invited
-    CheckJoinErrors(client, password);
+    if (!CheckJoinErrors(client, password))
+        return;
     if (this->isOnChannel(client))
     {
         this->_server->sendMessage(NULL, client, ERR_USERONCHANNEL, 0, " "+ this->getName() + " :is already on channel");

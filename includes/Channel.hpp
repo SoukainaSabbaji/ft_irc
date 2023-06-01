@@ -77,7 +77,7 @@ class Channel
         void AddMember(Client *client, std::string password);
         void SendJoinReplies(Client *client);
         void BroadcastJoinMessage(Client *client);
-        void CheckJoinErrors(Client *client, std::string password);
+        bool CheckJoinErrors(Client *client, std::string password);
         bool CheckOperator(Client *client);
         bool CheckMember(Client *client);
         void TheBootlegBroadcast(std::string message);
